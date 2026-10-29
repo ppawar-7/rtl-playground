@@ -155,34 +155,161 @@ export class FSMModel {
      * @private
      */
     _evalCondition(conditionStr, inputVals) {
-        if (!conditionStr || conditionStr.trim() === '' || conditionStr.trim() === '1') {
-            return true;
+        return FSMModel.safeEvalBooleanExpr(conditionStr, inputVals);
+    }
+
+    /**
+     * Safe recursive-descent Boolean expression parser and evaluator.
+     * Complies with strict Content Security Policy (CSP) and prevents code injection.
+     * Supports:
+     * - Signal identifiers (e.g., in_bit, timer)
+     * - Logical and bitwise operators: &&, &, ||, |, ^, !, ~
+     * - Binary equality: ==, !=
+     * - Numeric constants: 0, 1
+     * - Parenthesized subexpressions: (a | b) & c
+     *
+     * @param {string} exprStr
+     * @param {Object.<string, number>} [inputVals={}]
+     * @returns {boolean}
+     */
+    static safeEvalBooleanExpr(exprStr, inputVals = {}) {
+        if (exprStr === null || exprStr === undefined) return false;
+        if (typeof exprStr !== 'string') return false;
+        const s = exprStr.trim();
+        if (s === '' || s === '1' || s.toLowerCase() === 'true') return true;
+        if (s === '0' || s.toLowerCase() === 'false') return false;
+
+        // Tokenize
+        const tokens = [];
+        let i = 0;
+        const len = s.length;
+
+        while (i < len) {
+            const ch = s[i];
+            if (/\s/.test(ch)) {
+                i++;
+                continue;
+            }
+
+            if (ch === '&') {
+                if (s[i + 1] === '&') { tokens.push({ type: 'AND' }); i += 2; }
+                else { tokens.push({ type: 'AND' }); i++; }
+            } else if (ch === '|') {
+                if (s[i + 1] === '|') { tokens.push({ type: 'OR' }); i += 2; }
+                else { tokens.push({ type: 'OR' }); i++; }
+            } else if (ch === '^') {
+                tokens.push({ type: 'XOR' }); i++;
+            } else if (ch === '=' && s[i + 1] === '=') {
+                tokens.push({ type: 'EQ' }); i += 2;
+            } else if (ch === '!' && s[i + 1] === '=') {
+                tokens.push({ type: 'NEQ' }); i += 2;
+            } else if (ch === '!' || ch === '~') {
+                tokens.push({ type: 'NOT' }); i++;
+            } else if (ch === '(') {
+                tokens.push({ type: 'LPAREN' }); i++;
+            } else if (ch === ')') {
+                tokens.push({ type: 'RPAREN' }); i++;
+            } else if (/\d/.test(ch)) {
+                let numStr = '';
+                while (i < len && /\d/.test(s[i])) {
+                    numStr += s[i];
+                    i++;
+                }
+                tokens.push({ type: 'NUM', val: parseInt(numStr, 10) });
+            } else if (/[a-zA-Z_]/.test(ch)) {
+                let idStr = '';
+                while (i < len && /[a-zA-Z0-9_]/.test(s[i])) {
+                    idStr += s[i];
+                    i++;
+                }
+                tokens.push({ type: 'ID', val: idStr });
+            } else {
+                // Reject invalid tokens immediately for safety
+                return false;
+            }
         }
 
-        const clean = conditionStr.trim();
+        if (tokens.length === 0) return true;
 
-        // Single input shorthand: e.g. "in_bit" or "!in_bit"
-        if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(clean)) {
-            return Boolean(inputVals[clean]);
-        }
-        if (/^![a-zA-Z_][a-zA-Z0-9_]*$/.test(clean)) {
-            const varName = clean.slice(1);
-            return !Boolean(inputVals[varName]);
-        }
+        let pos = 0;
+        const peek = () => tokens[pos] || null;
+        const consume = (expectedType) => {
+            const tok = tokens[pos];
+            if (!tok) return null;
+            if (expectedType && tok.type !== expectedType) return null;
+            pos++;
+            return tok;
+        };
 
-        // Simple binary comparisons: "in_bit == 1", "in_bit == 0"
-        const match = clean.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*(==|!=)\s*([0-9]+)$/);
-        if (match) {
-            const [, varName, op, valStr] = match;
-            const targetVal = Number(valStr);
-            const actualVal = Number(inputVals[varName] || 0);
-            return op === '==' ? (actualVal === targetVal) : (actualVal !== targetVal);
-        }
+        const parsePrimary = () => {
+            const tok = peek();
+            if (!tok) return 0;
+            if (tok.type === 'NOT') {
+                consume('NOT');
+                const val = parsePrimary();
+                return val ? 0 : 1;
+            }
+            if (tok.type === 'LPAREN') {
+                consume('LPAREN');
+                const val = parseOr();
+                consume('RPAREN');
+                return val;
+            }
+            if (tok.type === 'NUM') {
+                consume('NUM');
+                return tok.val;
+            }
+            if (tok.type === 'ID') {
+                consume('ID');
+                const v = inputVals[tok.val];
+                return (v !== undefined && v !== null) ? Number(v) : 0;
+            }
+            return 0;
+        };
 
-        // Fallback safe evaluation in isolated context
+        const parseEq = () => {
+            let left = parsePrimary();
+            while (peek() && (peek().type === 'EQ' || peek().type === 'NEQ')) {
+                const op = consume().type;
+                const right = parsePrimary();
+                left = op === 'EQ' ? (left === right ? 1 : 0) : (left !== right ? 1 : 0);
+            }
+            return left;
+        };
+
+        const parseAnd = () => {
+            let left = parseEq();
+            while (peek() && peek().type === 'AND') {
+                consume('AND');
+                const right = parseEq();
+                left = (left && right) ? 1 : 0;
+            }
+            return left;
+        };
+
+        const parseXor = () => {
+            let left = parseAnd();
+            while (peek() && peek().type === 'XOR') {
+                consume('XOR');
+                const right = parseAnd();
+                left = (Boolean(left) !== Boolean(right)) ? 1 : 0;
+            }
+            return left;
+        };
+
+        const parseOr = () => {
+            let left = parseXor();
+            while (peek() && peek().type === 'OR') {
+                consume('OR');
+                const right = parseXor();
+                left = (left || right) ? 1 : 0;
+            }
+            return left;
+        };
+
         try {
-            const fn = new Function(...Object.keys(inputVals), `return Boolean(${clean});`);
-            return Boolean(fn(...Object.values(inputVals)));
+            const res = parseOr();
+            return Boolean(res);
         } catch {
             return false;
         }

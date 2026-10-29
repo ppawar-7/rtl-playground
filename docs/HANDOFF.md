@@ -32,7 +32,7 @@ The PD Playground RTL platform has successfully completed the **Autonomous Full 
 - Multi-bit hexadecimal bus waveforms (`< 0xA >`).
 
 ### C. Unified Cross-Navigation & Deep-Linking
-- Persistent platform header navigation linking Fundamentals, Datapaths & ALU, Sequential & Counters, FSM Studio, and Curriculum (22).
+- Persistent platform header navigation linking Fundamentals, Datapaths & ALU, Sequential & Counters, FSM Studio, and Curriculum (24).
 - URL parameter support:
   - `index.html?preset=<name>` loads any preset circuit immediately.
   - `advanced-lab/index.html?tab=<datapath|sequential|fsm|waveforms|lessons|verilog>` automatically opens the corresponding tab on page load.
@@ -46,7 +46,7 @@ The PD Playground RTL platform has successfully completed the **Autonomous Full 
 |---|---|---|---|---|
 | **Consolidated Master Suite** | `node tests/run_all_integrated_tests.js` | Runs all 5 core suites sequentially | 5 / 5 suites passed | 🟢 PASSED |
 | **RTL Fundamentals Unit Tests** | `cmd /c npm test` | Gate truth tables, sequential timing, DFFESR, 16 presets, 12 lessons | 49 / 49 tests passed | 🟢 PASSED |
-| **Advanced RTL Lab Unit Suites** | `cmd /c npm run test:advanced` | Vector engine, arithmetic, sequential, FSM, curriculum, property tests | 7 / 7 suites (5,474 assertions) | 🟢 PASSED |
+| **Advanced RTL Lab Unit Suites** | `cmd /c npm run test:advanced` | Vector engine, arithmetic, sequential, FSM, curriculum, property tests | 8 / 8 suites (5,470+ assertions) | 🟢 PASSED |
 | **Full Yosys Synthesis Verification** | `cmd /c npm run test:yosys` | AST parsing, hierarchy elaboration, proc, opt, check -assert | 17 / 17 modules synthesizable | 🟢 PASSED |
 | **Icarus Verilog Functional Simulation** | `cmd /c npm run test:iverilog` | Compiled event-driven simulation in `@veriflow/iverilog-wasm` | 17 / 17 testbenches passed | 🟢 PASSED |
 | **Cross-Engine Differential Equivalence** | `cmd /c npm run test:differential` | Bit-for-bit parity checks between JavaScript simulation and Verilog | 106 / 106 checks (0 mismatches) | 🟢 PASSED |

@@ -14,6 +14,26 @@
 
 import { COMPONENT_TYPES } from '../engine/circuit_graph.js';
 
+/**
+ * XML/HTML entity escaping helper for safe SVG text interpolation.
+ * @param {*} str
+ * @returns {string}
+ */
+function escapeXml(str) {
+    if (typeof str !== 'string') return String(str ?? '');
+    return str.replace(/[&<>"']/g, char => {
+        switch (char) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            default: return char;
+        }
+    });
+}
+
+
 export class CircuitEditor {
     /**
      * @param {string} svgId - ID of SVG element
@@ -212,7 +232,7 @@ export class CircuitEditor {
                     <text id="io-text-${comp.id}" class="io-value-text val-${comp.outputs[0].value !== null ? comp.outputs[0].value : 'null'}" x="22" y="21">
                         ${comp.outputs[0].value !== null ? comp.outputs[0].value : '0'}
                     </text>
-                    <text class="gate-label" x="22" y="34" font-size="8">${comp.label}</text>
+                    <text class="gate-label" x="22" y="34" font-size="8">${escapeXml(comp.label)}</text>
                 `;
                 break;
 
@@ -223,7 +243,7 @@ export class CircuitEditor {
                     <text id="io-text-${comp.id}" class="io-value-text val-${inVal !== null ? inVal : 'null'}" x="24" y="24">
                         ${inVal !== null ? inVal : '?'}
                     </text>
-                    <text class="gate-label" x="24" y="48" font-size="9">${comp.label}</text>
+                    <text class="gate-label" x="24" y="48" font-size="9">${escapeXml(comp.label)}</text>
                 `;
                 break;
 

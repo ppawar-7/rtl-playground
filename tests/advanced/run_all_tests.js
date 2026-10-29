@@ -16,7 +16,8 @@ const suites = [
     { name: 'Phase B: Arithmetic, ALU & Yosys Checks', file: 'tests/advanced/test_arithmetic.js' },
     { name: 'Phase C: Sequential Registers & Counters', file: 'tests/advanced/test_sequential.js' },
     { name: 'Phase D: Finite State Machines & Yosys Checks', file: 'tests/advanced/test_fsm.js' },
-    { name: 'Phase E: Curriculum & Lessons (10 Activities)', file: 'tests/advanced/test_curriculum.js' },
+    { name: 'Phase E: Curriculum & Lessons (12 Advanced, 24 Total)', file: 'tests/advanced/test_curriculum.js' },
+    { name: 'Phase G: Security Hardening & Safe Parser', file: 'tests/advanced/test_security_expressions.js' },
     { name: 'Phase F: Property-Based Randomized Tests (5,000+ checks)', file: 'tests/advanced/property_tests.js' },
     { name: 'Baseline Regression: Original RTL Playground Test Suite', file: 'tests/tests.js' }
 ];
@@ -59,7 +60,7 @@ for (const s of summary) {
 console.log("===============================================================");
 
 if (allPassed) {
-    console.log("  🚀 ALL 7 TEST SUITES PASSED CLEANLY WITH ZERO REGRESSIONS!");
+    console.log("  🚀 ALL 8 TEST SUITES PASSED CLEANLY WITH ZERO REGRESSIONS!");
     process.exit(0);
 } else {
     console.error("  ❌ ONE OR MORE TEST SUITES FAILED!");

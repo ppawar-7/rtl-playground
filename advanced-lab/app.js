@@ -116,10 +116,10 @@ class AdvancedRTLApp {
         container.innerHTML = `
             <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
                 <div>
-                    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan);">Comprehensive Digital RTL Curriculum (22 Lessons)</h2>
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan);">Comprehensive Digital RTL Curriculum (24 Lessons)</h2>
                     <p style="color: var(--text-muted); font-size: 0.85rem;">
                         Tier 1–2: RTL Fundamentals (12 Lessons in Gate Editor) &nbsp;•&nbsp;
-                        Tier 3–4: Advanced Systems & FSMs (10 Lessons Verified: ${completed.size} / ${ADVANCED_LESSONS.length})
+                        Tier 3–4: Advanced Systems & FSMs (12 Lessons Verified: ${completed.size} / ${ADVANCED_LESSONS.length})
                     </p>
                 </div>
                 <div style="display:flex; gap: 8px;">
@@ -130,7 +130,7 @@ class AdvancedRTLApp {
 
             <!-- Tier 3 & 4: Advanced RTL Lab Lessons -->
             <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; color: #f3f4f6;">
-                Part 2: Multi-Bit Vectors, Datapaths, Counters & FSMs (Lessons 13–22)
+                Part 2: Multi-Bit Vectors, Datapaths, Counters, FSMs & Verification (Lessons 13–24)
             </h3>
             <div class="lessons-list" style="margin-bottom: 28px;">
                 ${ADVANCED_LESSONS.map((l, idx) => {
@@ -212,7 +212,9 @@ class AdvancedRTLApp {
                         tcAtCount: 5, modulo: 6,
                         finalParallel: 0b1011,
                         nextState: 'S_101', detected: true,
-                        immediateType: 'MEALY', zeroLatencyType: 'MEALY'
+                        immediateType: 'MEALY', zeroLatencyType: 'MEALY',
+                        hasDefaultAssign: true, completeAssignment: true,
+                        clockPeriod: 10, expectedLatency: 2
                     });
 
                     const feedback = container.querySelector(`#feedback-${lId}`);

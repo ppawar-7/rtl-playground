@@ -17,7 +17,7 @@ The platform provides a continuous, tiered learning path from fundamental single
   - **YoWASP Yosys**: Real-time IEEE 1364 Verilog AST parsing, hierarchy elaboration, and formal design rule checks (`@yowasp/yosys`).
   - **Icarus Verilog WASM**: IEEE 1364 event-driven simulator compiling self-checking testbenches inside Node.js (`@veriflow/iverilog-wasm`).
 - **Bit-for-Bit Differential Verification**: Automated cycle-accurate equivalence suite verifying 106 differential vectors between browser JavaScript engines and compiled Verilog with 0 mismatches.
-- **Unified 22-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 10 multi-bit advanced challenges with automatic behavioral solution checking.
+- **Unified 24-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 10 multi-bit advanced challenges with automatic behavioral solution checking.
 - **Seamless Bi-Directional Platform Navigation**: Integrated platform switcher connecting RTL Fundamentals, Datapaths & ALU, Sequential Systems & Counters, and FSM Studio.
 
 ---
@@ -32,7 +32,7 @@ flowchart TD
         DP["Datapath & ALU Visualizer\n(Multi-Bit Vectors & Carry Chains)"]
         SEQ["Sequential Systems\n(Registers, Counters & Shift Regs)"]
         FSM["FSM Studio\n(Interactive SVG State Diagrams)"]
-        LESSONS["Unified Educational Curriculum\n(22 Guided Lessons)"]
+        LESSONS["Unified Educational Curriculum\n(24 Guided Lessons)"]
     end
 
     subgraph Engines ["Simulation & Hardware Models"]
@@ -95,7 +95,7 @@ flowchart TD
 
 ---
 
-## 4. Comprehensive 22-Lesson Curriculum
+## 4. Comprehensive 24-Lesson Curriculum
 
 | # | Lesson Title | Tier | Core Concept & Objective |
 |:---:|---|---|---|
@@ -121,6 +121,8 @@ flowchart TD
 | **20** | Universal Shift Register | Advanced | Bidirectional shift and parallel load modes (SISO/SIPO/PISO) |
 | **21** | Sequence Detector FSM | Advanced | Deterministic state machine detecting `101` pattern |
 | **22** | Moore vs Mealy Output Timing | Advanced | State-only Moore vs input-dependent zero-latency Mealy outputs |
+| **23** | Combinational Latch Inference | Advanced | Complete branch coverage avoiding unwanted transparent hardware latches |
+| **24** | Self-Checking Verilog Testbenches | Advanced | Automated verification testbench with clock generation and assertions |
 
 ---
 
@@ -164,5 +166,17 @@ node tests/student_journeys_audit.js     # End-to-End Journeys A-F Audit
 - **Icarus Verilog Testbenches**: 17 / 17 Suites Passed (0 assertion errors)
 - **Cross-Engine Differential Parity**: 106 / 106 Checks Passed (0 mismatches)
 - **Headless Edge Browser Audits**: 100% Passed across both portals (0 uncaught exceptions)
-- **Background Stress Test (PID 22852)**: Active on Phase 5 baseline (> 53,600 batches, > 187,000 circuits, 0 failures, 0 memory leaks)
+- **Long-Duration Stress Harness (2 Hours)**: Formally completed full run (`run_20261029_003549`): 129,494 batches, 453,229 circuits generated, 1,338,342 simulation cycles, 0 failures, 0 memory leaks
 - **Release Status**: **`v0.2.0-rc1` Verified & Approved**.
+
+---
+
+## 7. Documentation Matrix
+
+- [RTL Learning Coverage Matrix (38 Topics)](docs/RTL_LEARNING_COVERAGE_MATRIX.md)
+- [Known Limitations & Modeling Approximations](docs/KNOWN_LIMITATIONS.md)
+- [In-Repository AI Handoff & Transfer Guide](docs/HANDOFF_TO_INCOMING_AI.md)
+- [Full RTL Integration Report](docs/FULL_RTL_INTEGRATION_REPORT.md)
+- [Full RTL Verification Report](docs/FULL_RTL_VERIFICATION_REPORT.md)
+- [Full RTL Release Checklist](docs/FULL_RTL_RELEASE_CHECKLIST.md)
+- [Phase 7 RTL-to-STA Bridge Architecture Design](docs/RTL_TO_STA_BRIDGE_DESIGN.md)

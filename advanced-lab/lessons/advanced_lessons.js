@@ -274,6 +274,57 @@ In high-speed physical design, Mealy outputs can create long combinational paths
             }
             return { success: false, message: 'Mealy machines respond combinationally within the same cycle.' };
         }
+    },
+    {
+        id: 'lesson_11_latch_inference',
+        title: 'Combinational Latch Inference & Synthesis Rules',
+        difficulty: 'Intermediate',
+        category: 'Synthesis',
+        objective: 'Identify why incomplete conditional assignments in combinational always @(*) blocks infer unwanted hardware latches.',
+        explanation: `In synthesizable Verilog, combinational procedural blocks (always @(*)) must assign every output signal along EVERY possible execution branch.
+If an if-statement lacks an else-clause, or a case-statement lacks default and does not enumerate all values, the synthesis compiler (e.g. Yosys) assumes the designer intended to hold the previous value when that branch is taken.
+Because pure combinational logic has no memory, the compiler must infer a transparent latch (e.g. $dlatch).
+In synchronous ASIC design, unintended latches cause severe timing hazards, hold-time violations, and testability nightmares.
+Golden Rule: Assign safe default values at the top of the always @(*) block or ensure all branches have complete coverage.`,
+        challenge: 'Select the valid design techniques that guarantee no latches are inferred in combinational always @(*) blocks.',
+        hints: [
+            'Assigning default values at the beginning of always @(*) covers all unhandled cases.',
+            'A case statement should include a default branch or cover all 2^N input combinations.',
+            'Every if-statement in combinational RTL should have a matching else-branch.'
+        ],
+        physicalDesignNote: 'Static Timing Analysis (STA) on transparent latches requires time-borrowing and cycle-stealing checks, which drastically complicates timing closure compared to edge-triggered flip-flops.',
+        validate: (solution) => {
+            if (solution.hasDefaultAssign === true || solution.completeAssignment === true || solution.coverage === 'COMPLETE') {
+                return { success: true, message: 'Correct! Complete branch coverage and default assignments prevent unintended transparent latch inference.' };
+            }
+            return { success: false, message: 'Combinational logic must assign all outputs across every possible branch to avoid latch inference.' };
+        }
+    },
+    {
+        id: 'lesson_12_testbench_basics',
+        title: 'Self-Checking Verilog Testbenches & Simulation Assertions',
+        difficulty: 'Advanced',
+        category: 'Verification',
+        objective: 'Construct an automated self-checking testbench with clock generation and simulation assertions.',
+        explanation: `A Verilog testbench is a simulation wrapper that applies stimulus to a Device Under Test (DUT) and checks outputs.
+Key testbench constructs:
+1. Clock Generation: 'initial forever #5 clk = ~clk;' creates an oscillating clock signal (period 10 time units).
+2. Reset Sequence: Assert reset, wait for clock edges, then release reset.
+3. Synchronous Stimulus: Drive inputs on falling edges or with clock synchronization (@(posedge clk)).
+4. Self-Checking Assertions: Compare DUT output against expected values automatically using if/else or assert, reporting errors with $error or $fatal, and ending cleanly with $finish.`,
+        challenge: 'Verify an automated testbench configuration with a clock period of 10 units that tests a 2-stage shift register with an expected latency of 2 clock cycles.',
+        hints: [
+            'A symmetric 10-unit clock period toggles every 5 units (#5 clk = ~clk).',
+            'A 2-stage shift register with nonblocking assignments (<=) requires exactly 2 posedge clock cycles for data to traverse from input to output.',
+            'Automated assertions eliminate the need for manual waveform inspection.'
+        ],
+        physicalDesignNote: 'Automated self-checking regressions are standard for pre-silicon signoff. Thousands of automated testbenches run in parallel before physical tapeout.',
+        validate: (solution) => {
+            if ((solution.clockPeriod === 10 || solution.halfPeriod === 5) && solution.expectedLatency === 2) {
+                return { success: true, message: 'Correct! Clock period 10 with 2-cycle latency verification confirmed for the 2-stage pipeline.' };
+            }
+            return { success: false, message: 'Testbench requires clockPeriod=10 and expectedLatency=2 cycles for a 2-stage shift register.' };
+        }
     }
 ];
 

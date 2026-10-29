@@ -196,12 +196,12 @@ async function runNavigationAudit() {
     if (!hasSvgGraph) throw new Error('FSM state diagram missing');
 
     // Step 5: Switch to Curriculum (22 Lessons)
-    console.log("  [Step 5] Switching to 'Curriculum (22)' tab...");
+    console.log("  [Step 5] Switching to 'Curriculum (24)' tab...");
     await cdp.evaluate(`document.querySelector('.nav-tab[data-tab=\"lessons\"]').click()`);
     await sleep(200);
     const advLessonCount = await cdp.evaluate(`document.querySelectorAll('.btn-solve').length`);
     console.log(`  [Step 5] Interactive Challenge count in curriculum view: ${advLessonCount}`);
-    if (advLessonCount !== 10) throw new Error(`Expected 10 interactive challenges, found ${advLessonCount}`);
+    if (advLessonCount !== 12) throw new Error(`Expected 12 interactive challenges, found ${advLessonCount}`);
 
     // Step 6: Click back link to RTL Fundamentals
     console.log("  [Step 6] Clicking '← RTL Fundamentals' return link...");

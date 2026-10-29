@@ -22,7 +22,7 @@ function assert(condition, testName) {
 console.log("=== Testing Advanced RTL Educational Curriculum (Phase E) ===");
 
 // 1. Structure Audit: 10 Lessons
-assert(ADVANCED_LESSONS.length === 10, "Curriculum contains exactly 10 high-quality advanced lessons");
+assert(ADVANCED_LESSONS.length === 12, "Curriculum contains exactly 12 high-quality advanced lessons (24 total platform lessons)");
 
 const expectedFields = ['id', 'title', 'difficulty', 'category', 'objective', 'explanation', 'challenge', 'hints', 'physicalDesignNote', 'validate'];
 
