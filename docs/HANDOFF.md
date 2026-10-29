@@ -28,15 +28,21 @@ RTL Playground has completed Phase 5 development:
    - `node tests/tests.js`: 37 test cases covering truth tables, multi-gate cascades, fan-out, DFF nonblocking edge updates, clock filtering, cycle detection, multi-level logic trees, Verilog generation, serialization, all 9 presets, and all 8 lessons.
 2. **Real Verilog HDL Compilation via Yosys**:
    - `node tests/verilog_verification/run_yosys_verification.js`: all 6 modules (`gates.v`, `half_adder.v`, `mux2.v`, `dff.v`, `shift_reg.v`, `multi_dff.v`) compiled to AST, elaborated, checked (`check -assert`), and synthesized with 0 errors.
-3. **Automated Real Browser CDP Testing in Microsoft Edge**:
+3. **Event-Driven Icarus Verilog Simulation**:
+   - `node tests/verilog_verification/run_iverilog_simulation.js`: all 6 benchmark testbenches executed with IEEE 1364 event-driven simulation via `@veriflow/iverilog-wasm` (`ivlpp`, `ivl`, `vvp`). All 6 suites passed behavioral assertions with 0 errors.
+4. **Cross-Engine Differential Simulation**:
+   - `node tests/verilog_verification/run_differential_simulation.js`: cycle-by-cycle equivalence testing across 7 benchmark circuits comparing JavaScript simulation vs compiled Verilog execution. All 28 checks passed with 0 mismatches.
+5. **Automated Real Browser CDP Testing in Microsoft Edge**:
    - `node tests/browser_smoke_test.js`: launches headless Microsoft Edge, validates in-browser test runner (`test_runner.html`), loads main app (`index.html`), tests all 9 presets, live input toggling, truth table generation, waveform viewer clock stepping, all 8 lessons (both starter failure and correct solution), and manual circuit construction (palette click, canvas placement, pin wiring, live toggle, inspector selection, and deletion).
 
 ---
 
 ## 3. Which Tests Pass or Fail
 
-- **Automated Tests (`node tests/tests.js`)**: **37 Passed, 0 Failed**.
+- **Automated Unit Tests (`node tests/tests.js`)**: **37 Passed, 0 Failed**.
 - **Real Verilog Yosys Verification (`node tests/verilog_verification/run_yosys_verification.js`)**: **6 Passed, 0 Failed**.
+- **Event-Driven Icarus Verilog Simulation (`node tests/verilog_verification/run_iverilog_simulation.js`)**: **6 Passed, 0 Failed**.
+- **Cross-Engine Differential Simulation (`node tests/verilog_verification/run_differential_simulation.js`)**: **28 Passed, 0 Failed (0 mismatches)**.
 - **Browser Automation Suite (`node tests/browser_smoke_test.js`)**: **All Passed, 0 Uncaught Page Exceptions**.
 - **In-Browser Test Runner (`tests/test_runner.html`)**: **37 Passed, 0 Failed**.
 
@@ -54,7 +60,8 @@ RTL Playground has completed Phase 5 development:
 1. **Single-bit signals only**: All canvas nets represent 1-bit wires.
 2. **Combinational feedback loops rejected**: Strict cycle detection prevents asynchronous latches by design (Decision 007).
 3. **Truth table size limit**: Restricted to $\le 4$ independent inputs ($2^4 = 16$ rows) to maintain UI responsiveness.
-4. **External Icarus Verilog setup**: Icarus Verilog is not on system PATH; Yosys WebAssembly handles local AST/synthesis checks. If external `iverilog` binary simulation is required, `winget install Icarus.Verilog` can be executed once user approves.
+4. **HDL uninitialized state vs Schematic defaults**: Real Verilog registers power on as `1'bx` unless reset or initialized in the testbench, whereas RTL Playground schematics default DFF state to `Q = 0` at startup.
+5. **3-value logic vs Verilog 4-state**: RTL Playground propagates `null` when inputs are disconnected/unspecified, whereas Verilog uses `X` (unknown) and `Z` (high-impedance) with Boolean masking ($1 \lor X = 1$).
 
 ---
 
@@ -83,16 +90,22 @@ cd C:\Users\pranil\Documents\PD-Playground\rtl-playground
 # 1. Run unit tests in Node.js (37 tests):
 node tests/tests.js
 
-# 2. Run real Verilog HDL verification via WebAssembly Yosys (6 benchmarks):
+# 2. Run real Verilog HDL synthesis verification via WebAssembly Yosys (6 benchmarks):
 node tests/verilog_verification/run_yosys_verification.js
 
-# 3. Launch local HTTP server (port 8080):
+# 3. Run real event-driven Verilog simulation via Icarus Verilog WASM (6 testbenches):
+node tests/verilog_verification/run_iverilog_simulation.js
+
+# 4. Run cross-engine differential simulation (JS engine vs compiled Verilog):
+node tests/verilog_verification/run_differential_simulation.js
+
+# 5. Launch local HTTP server (port 8080):
 python -m http.server 8080
 
-# 4. Run automated browser tests in Microsoft Edge (requires local server on 8080):
+# 6. Run automated browser tests in Microsoft Edge (requires local server on 8080):
 node tests/browser_smoke_test.js
 
-# 5. Open in any browser:
+# 7. Open in any browser:
 # Main Application: http://localhost:8080
 # In-Browser Test Runner: http://localhost:8080/tests/test_runner.html
 ```

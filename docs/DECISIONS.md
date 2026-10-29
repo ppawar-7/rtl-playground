@@ -75,3 +75,9 @@
 **Date**: 2026-10-29  
 **Decision**: Canvas component selection dynamically highlights the corresponding continuous assignment (`assign`), port definition, or procedural register (`always @(posedge clk)`) in the Verilog code pane, and renders an "RTL Hardware Mapping" inspector card with target standard cell details.  
 **Rationale**: Connects visual schematic representation directly to HDL text and ASIC physical synthesis concepts for students.
+
+## Decision 013: Event-Driven HDL Simulation Closure via @veriflow/iverilog-wasm
+
+**Date**: 2026-10-29  
+**Decision**: Integrate `@veriflow/iverilog-wasm` to execute true event-driven Icarus Verilog (`ivlpp`, `ivl`, `vvp`) simulation within Node.js, and establish automated cross-engine differential simulation comparing JavaScript simulation against compiled IEEE 1364 Verilog execution.  
+**Rationale**: Synthesizability and AST checks (via Yosys) confirm syntax and circuit mapping, but cannot verify dynamic simulation semantics (such as nonblocking assignment scheduling, clock-edge races, hold times, and multi-cycle pipeline propagation). Using WebAssembly Icarus Verilog provides true event-driven HDL execution with zero system-level tool installations, completing cycle-accurate verification closure across all 7 benchmark designs.
