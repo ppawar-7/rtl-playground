@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD Playground — Advanced RTL Lab</title>
+    <link rel="stylesheet" href="styles/advanced.css">
+</head>
+<body>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <span class="header-title">PD Playground: Advanced RTL Lab</span>
+            <span class="header-subtitle">Multi-Bit Vectors, Arithmetic Datapaths, Sequential Systems & FSMs</span>
+        </div>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="datapath">Datapath & ALU</button>
+            <button class="nav-tab" data-tab="sequential">Registers & Counters</button>
+            <button class="nav-tab" data-tab="fsm">State Machines</button>
+            <button class="nav-tab" data-tab="waveforms">Waveforms</button>
+            <button class="nav-tab" data-tab="lessons">Lessons (10)</button>
+            <button class="nav-tab" data-tab="verilog">Verilog HDL</button>
+        </nav>
+    </header>
+
+    <!-- Main Tab Views -->
+    <main class="app-main">
+        <!-- Tab 1: Datapath & Arithmetic -->
+        <section id="tab-datapath" class="tab-content active">
+            <div id="datapath-mount"></div>
+        </section>
+
+        <!-- Tab 2: Sequential Systems -->
+        <section id="tab-sequential" class="tab-content">
+            <div id="sequential-mount"></div>
+        </section>
+
+        <!-- Tab 3: State Machines -->
+        <section id="tab-fsm" class="tab-content">
+            <div id="fsm-mount"></div>
+        </section>
+
+        <!-- Tab 4: Waveforms -->
+        <section id="tab-waveforms" class="tab-content">
+            <div class="card">
+                <h3>Multi-Bit Sequential Bus Waveforms</h3>
+                <canvas id="advanced-waveform-canvas" width="1000" height="300" style="width: 100%; height: 300px;"></canvas>
+            </div>
+        </section>
+
+        <!-- Tab 5: Guided Lessons -->
+        <section id="tab-lessons" class="tab-content">
+            <div id="lessons-mount"></div>
+        </section>
+
+        <!-- Tab 6: Verilog HDL Viewer -->
+        <section id="tab-verilog" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h3>Synthesizable Verilog RTL Viewer</h3>
+                        <select id="verilog-module-select" class="select-input">
+                            <option value="half_adder">Half Adder (1-bit)</option>
+                            <option value="full_adder">Full Adder (1-bit with P/G)</option>
+                            <option value="rca4">Ripple-Carry Adder (4-bit Parameterized)</option>
+                            <option value="alu4" selected>Educational ALU (4-bit with Z, C, V, N Flags)</option>
+                            <option value="reg4">Multi-Bit Register (Clock Enable & Sync Reset)</option>
+                            <option value="counter">Modulo Counter (with Terminal Count)</option>
+                            <option value="shift">Universal Shift Register (SISO / SIPO / PISO)</option>
+                            <option value="fsm">Finite State Machine (2-Process Synthesizable)</option>
+                        </select>
+                    </div>
+                    <button id="btn-copy-verilog" class="btn btn-secondary btn-sm">Copy Code</button>
+                </div>
+                <div id="verilog-code-viewer" class="code-viewer-box"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- App Module Bootstrap -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
