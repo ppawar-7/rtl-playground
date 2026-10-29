@@ -89,10 +89,13 @@
 - [x] Inspected PID 22852: verified healthy execution (~50 minutes elapsed, 53,610 batches, 0 failures, 0 memory leaks). Preserved undisturbed.
 
 ### Stage 10: Release Candidate Documentation
-- [x] Created `docs/FULL_RTL_INTEGRATION_REPORT.md`.
-- [x] Created `docs/FULL_RTL_VERIFICATION_REPORT.md`.
-- [x] Created `docs/FULL_RTL_RELEASE_CHECKLIST.md`.
-- [x] Updated `README.md`, `docs/HANDOFF.md`, and `docs/PROGRESS.md`.
+### Stage 12: Public GitHub Release & Live Verification Closure
+- [x] Provisioned standalone public repository `https://github.com/ppawar-7/rtl-playground`.
+- [x] Configured remote `origin` and published `integrate/full-rtl-playground` directly to remote `main`.
+- [x] Tagged and pushed Release Candidate `v0.2.0-rc1`.
+- [x] Automated GitHub Actions CI workflow passed 100% on Ubuntu runner (run 40930207450).
+- [x] Automated GitHub Pages deployment workflow passed and deployed site (run 40930207400).
+- [x] Live public website verified at `https://ppawar-7.github.io/rtl-playground/` with 0 uncaught page errors across all 24 lessons, ALU datapath, and FSM studio.
 
 ### Stage 11: Master RTL Hardening, Security Remediation & Release Finalization
 - [x] Security Hardening: Eliminated `new Function` in `fsm_engine.js`; implemented deterministic safe recursive-descent Boolean expression parser for FSM state transitions.
@@ -107,7 +110,10 @@
 - [x] Comprehensive Documentation Suite: Authored `docs/RTL_LEARNING_COVERAGE_MATRIX.md` (38 topics), `docs/KNOWN_LIMITATIONS.md`, and in-repository portable `docs/HANDOFF_TO_INCOMING_AI.md`.
 - [x] Updated platform navigation badges to `Curriculum (24)` across `index.html` and `advanced-lab/index.html`.
 - [x] 100% Verification closure across all 8 Advanced test suites and consolidated regression runners.
-- [x] Created `docs/FULL_RTL_INTEGRATION_REPORT.md`.
-- [x] Created `docs/FULL_RTL_VERIFICATION_REPORT.md`.
-- [x] Created `docs/FULL_RTL_RELEASE_CHECKLIST.md`.
-- [x] Updated `README.md`, `docs/HANDOFF.md`, and `docs/PROGRESS.md`.
+### Stage 12: Public GitHub Release & Live Verification Closure
+- [x] Provisioned standalone public repository `https://github.com/ppawar-7/rtl-playground`.
+- [x] Configured remote `origin` and published `integrate/full-rtl-playground` directly to remote `main`.
+- [x] Tagged and pushed Release Candidate `v0.2.0-rc1`.
+- [x] Automated GitHub Actions CI workflow passed 100% on Ubuntu runner (run 40930207450).
+- [x] Automated GitHub Pages deployment workflow passed and deployed site (run 40930207400).
+- [x] Live public website verified at `https://ppawar-7.github.io/rtl-playground/` with 0 uncaught page errors across all 24 lessons, ALU datapath, and FSM studio.
