@@ -144,8 +144,8 @@ async function runNavigationAudit() {
     ], { stdio: 'ignore' });
 
     let connected = false;
-    for (let i = 0; i < 30; i++) {
-        await sleep(200);
+    for (let i = 0; i < 50; i++) {
+        await sleep(300);
         try {
             const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
             if (res.ok) { connected = true; break; }

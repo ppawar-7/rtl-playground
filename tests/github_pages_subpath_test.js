@@ -156,15 +156,17 @@ async function runSubpathAudit() {
     ], { stdio: 'ignore' });
 
     let connected = false;
-    let retries = 25;
+    let retries = 50;
     let targets = null;
 
     while (retries > 0 && !connected) {
         try {
             await sleep(300);
             const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-            targets = await res.json();
-            if (targets && targets.length > 0) connected = true;
+            if (res.ok) {
+                targets = await res.json();
+                if (targets && targets.length > 0) connected = true;
+            }
         } catch {}
         retries--;
     }
