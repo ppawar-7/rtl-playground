@@ -165,7 +165,7 @@ export class CircuitEditor {
                 if (valText) {
                     const val = comp.outputs[0].value;
                     valText.textContent = val !== null ? val : '?';
-                    valText.className = `io-value-text val-${val !== null ? val : 'null'}`;
+                    valText.setAttribute('class', `io-value-text val-${val !== null ? val : 'null'}`);
                 }
             }
 
@@ -176,7 +176,7 @@ export class CircuitEditor {
                     const inPin = comp.inputs[0];
                     const val = inPin.connectedTo ? this.graph.getPinValue(inPin.connectedTo) : null;
                     valText.textContent = val !== null ? val : '?';
-                    valText.className = `io-value-text val-${val !== null ? val : 'null'}`;
+                    valText.setAttribute('class', `io-value-text val-${val !== null ? val : 'null'}`);
                 }
             }
 
@@ -186,7 +186,7 @@ export class CircuitEditor {
                 if (valText) {
                     const val = comp.outputs[0].value;
                     valText.textContent = val !== null ? val : '0';
-                    valText.className = `io-value-text val-${val !== null ? val : '0'}`;
+                    valText.setAttribute('class', `io-value-text val-${val !== null ? val : '0'}`);
                 }
             }
         }
@@ -505,6 +505,8 @@ export class CircuitEditor {
                 // Start creating a wire
                 const pinCoords = this.getPinAbsoluteCoords(compId, pinId);
                 this.isCreatingWire = true;
+                this.wireDragStarted = false;
+                this.wireStartCoords = coords;
                 this.wireStartPin = { componentId: compId, pinId, x: pinCoords.x, y: pinCoords.y };
                 this._createPendingWire(pinCoords.x, pinCoords.y);
                 return;
@@ -590,6 +592,12 @@ export class CircuitEditor {
         if (this.isCreatingWire && this.pendingWirePath) {
             const start = { x: this.wireStartPin.x, y: this.wireStartPin.y };
             const end = coords;
+            if (this.wireStartCoords) {
+                const dist = Math.hypot(coords.x - this.wireStartCoords.x, coords.y - this.wireStartCoords.y);
+                if (dist > 6) {
+                    this.wireDragStarted = true;
+                }
+            }
             const d = this._calculateWirePath(start, end);
             this.pendingWirePath.setAttribute('d', d);
         }
@@ -607,9 +615,11 @@ export class CircuitEditor {
                 const compId = pinElem.getAttribute('data-comp-id');
                 const pinId = pinElem.getAttribute('data-pin-id');
                 this._completeWire(compId, pinId);
-            } else {
+            } else if (this.wireDragStarted) {
+                // If the user dragged and released in empty space, cancel
                 this._cancelPendingWire();
             }
+            // If user just clicked (not dragged), keep pending wire active so next click on input pin completes it
         }
     }
 

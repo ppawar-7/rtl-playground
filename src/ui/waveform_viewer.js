@@ -144,11 +144,13 @@ export class WaveformViewer {
     redraw() {
         if (!this.canvas || !this.ctx) return;
 
-        // Resize canvas to parent box
+        // Resize canvas to parent box (with safe fallback if tab is hidden)
         const parent = this.canvas.parentElement;
-        const rect = parent.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = Math.max(160, rect.height);
+        const rect = parent ? parent.getBoundingClientRect() : { width: 600, height: 180 };
+        const safeWidth = rect.width > 50 ? rect.width : (parent?.clientWidth > 50 ? parent.clientWidth : 700);
+        const safeHeight = rect.height > 50 ? rect.height : (parent?.clientHeight > 50 ? parent.clientHeight : 180);
+        this.canvas.width = safeWidth;
+        this.canvas.height = Math.max(160, safeHeight);
 
         const width = this.canvas.width;
         const height = this.canvas.height;

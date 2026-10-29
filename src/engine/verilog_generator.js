@@ -49,6 +49,28 @@ export class VerilogGenerator {
             };
         }
 
+        // Build unique identifier registry to prevent duplicate port/signal names
+        this.signalNames = new Map();
+        const usedNames = new Set();
+        const allComps = [...inputs, ...clocks, ...outputs, ...dffs];
+        for (const comp of allComps) {
+            let baseName = this._sanitizeName(comp.label) || comp.type.toLowerCase();
+            const suffix = comp.id.split('_').pop();
+            if (VERILOG_RESERVED.has(baseName)) {
+                baseName = `${baseName}_${suffix}`;
+            }
+            let uniqueName = baseName;
+            if (usedNames.has(uniqueName)) {
+                uniqueName = `${baseName}_${suffix}`;
+            }
+            let counter = 2;
+            while (usedNames.has(uniqueName)) {
+                uniqueName = `${baseName}_${counter++}`;
+            }
+            usedNames.add(uniqueName);
+            this.signalNames.set(comp.id, uniqueName);
+        }
+
         const lines = [];
 
         // Module declaration
@@ -58,7 +80,7 @@ export class VerilogGenerator {
         lines.push(');');
         lines.push('');
 
-        // Port declarations
+        // Port declarations (synthesizable continuous assigns require wire outputs)
         for (const inp of inputs) {
             lines.push(`    input wire ${this._getSignalName(inp)};`);
         }
@@ -66,13 +88,7 @@ export class VerilogGenerator {
             lines.push(`    input wire ${this._getSignalName(clk)};`);
         }
         for (const out of outputs) {
-            // Check if this output is driven by a DFF
-            const isDFFDriven = this._isOutputDrivenByDFF(out);
-            if (isDFFDriven) {
-                lines.push(`    output reg ${this._getSignalName(out)};`);
-            } else {
-                lines.push(`    output wire ${this._getSignalName(out)};`);
-            }
+            lines.push(`    output wire ${this._getSignalName(out)};`);
         }
 
         // Internal wire declarations for intermediate gate outputs
@@ -100,17 +116,37 @@ export class VerilogGenerator {
             lines.push(`    ${assign}`);
         }
 
-        // Sequential always blocks
+        // Sequential always blocks (grouped by connected clock)
         if (dffs.length > 0) {
-            lines.push('');
-            const clkName = clocks.length > 0 ? this._getSignalName(clocks[0]) : 'clk';
-            lines.push(`    always @(posedge ${clkName}) begin`);
+            const dffsByClock = new Map();
             for (const dff of dffs) {
-                const dExpr = this._buildExpression(dff.id, 'in0');
-                const qName = `${this._getSignalName(dff)}_q`;
-                lines.push(`        ${qName} <= ${dExpr};`);
+                const clkPin = dff.inputs[1];
+                let clkName = null;
+                if (clkPin && clkPin.connectedTo) {
+                    const clkComp = this.graph.getComponent(clkPin.connectedTo.componentId);
+                    if (clkComp) {
+                        clkName = this._getSignalName(clkComp);
+                    }
+                }
+                if (!clkName) {
+                    clkName = clocks.length > 0 ? this._getSignalName(clocks[0]) : 'clk';
+                }
+                if (!dffsByClock.has(clkName)) {
+                    dffsByClock.set(clkName, []);
+                }
+                dffsByClock.get(clkName).push(dff);
             }
-            lines.push('    end');
+
+            for (const [clkName, groupDffs] of dffsByClock) {
+                lines.push('');
+                lines.push(`    always @(posedge ${clkName}) begin`);
+                for (const dff of groupDffs) {
+                    const dExpr = this._buildExpression(dff.id, 'in0');
+                    const qName = `${this._getSignalName(dff)}_q`;
+                    lines.push(`        ${qName} <= ${dExpr};`);
+                }
+                lines.push('    end');
+            }
         }
 
         lines.push('');
@@ -279,11 +315,12 @@ export class VerilogGenerator {
      * @private
      */
     _getSignalName(comp) {
+        if (this.signalNames && this.signalNames.has(comp.id)) {
+            return this.signalNames.get(comp.id);
+        }
         const sanitized = this._sanitizeName(comp.label);
-        // Avoid collisions by appending a suffix from the ID
         const suffix = comp.id.split('_').pop();
         const name = sanitized || comp.type.toLowerCase();
-        // Check for reserved words
         if (VERILOG_RESERVED.has(name)) {
             return `${name}_${suffix}`;
         }

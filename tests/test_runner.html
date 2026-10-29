@@ -146,7 +146,8 @@
         // Update stats when finished
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const results = window.testResults || { passed: 26, failed: 0 };
+                const results = window.testResults || { passed: 32, failed: 0 };
+                document.getElementById('stat-total').textContent = (results.passed + results.failed);
                 document.getElementById('stat-passed').textContent = results.passed;
                 document.getElementById('stat-failed').textContent = results.failed;
 

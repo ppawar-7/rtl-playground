@@ -725,6 +725,229 @@ await test('Serialize and deserialize circuit', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  11. ADVANCED VLSI LOGIC & SEQUENTIAL AUDIT TESTS
+// ═════════════════════════════════════════════════════════════════════════════
+
+log('\n📋 Advanced VLSI Logic & Sequential Audit Tests');
+
+await test('Full Adder: all 8 binary combinations (A, B, Cin -> Sum, Cout)', () => {
+    const graph = new CircuitGraph();
+    const sim = new LogicSimulator(graph);
+
+    const a = graph.addComponent('INPUT', 50, 40, 'a');
+    const b = graph.addComponent('INPUT', 50, 100, 'b');
+    const cin = graph.addComponent('INPUT', 50, 160, 'cin');
+
+    // XOR1 = a ^ b
+    const xor1 = graph.addComponent('XOR', 180, 50);
+    graph.addConnection(a.id, `${a.id}.out0`, xor1.id, `${xor1.id}.in0`);
+    graph.addConnection(b.id, `${b.id}.out0`, xor1.id, `${xor1.id}.in1`);
+
+    // XOR2 = (a ^ b) ^ cin = SUM
+    const xor2 = graph.addComponent('XOR', 300, 50);
+    graph.addConnection(xor1.id, `${xor1.id}.out0`, xor2.id, `${xor2.id}.in0`);
+    graph.addConnection(cin.id, `${cin.id}.out0`, xor2.id, `${xor2.id}.in1`);
+
+    // AND1 = a & b
+    const and1 = graph.addComponent('AND', 180, 140);
+    graph.addConnection(a.id, `${a.id}.out0`, and1.id, `${and1.id}.in0`);
+    graph.addConnection(b.id, `${b.id}.out0`, and1.id, `${and1.id}.in1`);
+
+    // AND2 = (a ^ b) & cin
+    const and2 = graph.addComponent('AND', 300, 140);
+    graph.addConnection(xor1.id, `${xor1.id}.out0`, and2.id, `${and2.id}.in0`);
+    graph.addConnection(cin.id, `${cin.id}.out0`, and2.id, `${and2.id}.in1`);
+
+    // OR1 = (a & b) | ((a ^ b) & cin) = COUT
+    const or1 = graph.addComponent('OR', 420, 140);
+    graph.addConnection(and1.id, `${and1.id}.out0`, or1.id, `${or1.id}.in0`);
+    graph.addConnection(and2.id, `${and2.id}.out0`, or1.id, `${or1.id}.in1`);
+
+    // Outputs
+    const sumOut = graph.addComponent('OUTPUT', 450, 50, 'sum');
+    const coutOut = graph.addComponent('OUTPUT', 550, 140, 'cout');
+    graph.addConnection(xor2.id, `${xor2.id}.out0`, sumOut.id, `${sumOut.id}.in0`);
+    graph.addConnection(or1.id, `${or1.id}.out0`, coutOut.id, `${coutOut.id}.in0`);
+
+    // Full truth table: A, B, Cin -> Sum, Cout
+    const table = [
+        [0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 0],
+        [0, 1, 0, 1, 0],
+        [0, 1, 1, 0, 1],
+        [1, 0, 0, 1, 0],
+        [1, 0, 1, 0, 1],
+        [1, 1, 0, 0, 1],
+        [1, 1, 1, 1, 1]
+    ];
+
+    for (const [aVal, bVal, cVal, expS, expC] of table) {
+        const res = sim.evaluateWithInputs({
+            [a.id]: aVal,
+            [b.id]: bVal,
+            [cin.id]: cVal
+        });
+        assertOk(res);
+        assertEqual(res.outputs[sumOut.id], expS, `Full Adder SUM for (${aVal},${bVal},${cVal})`);
+        assertEqual(res.outputs[coutOut.id], expC, `Full Adder COUT for (${aVal},${bVal},${cVal})`);
+    }
+});
+
+await test('2-Stage Shift Register: simultaneous DFF update without race condition', () => {
+    const graph = new CircuitGraph();
+    const sim = new LogicSimulator(graph);
+    const seq = new SequentialEngine(graph, sim);
+
+    const dIn = graph.addComponent('INPUT', 50, 40, 'd');
+    const clk = graph.addComponent('CLOCK', 50, 120, 'clk');
+
+    const dff1 = graph.addComponent('DFF', 180, 50, 'ff1');
+    const dff2 = graph.addComponent('DFF', 320, 50, 'ff2');
+
+    const q1Out = graph.addComponent('OUTPUT', 240, 120, 'q1');
+    const q2Out = graph.addComponent('OUTPUT', 450, 50, 'q2');
+
+    // Wiring:
+    // dIn -> DFF1.D, CLK -> DFF1.CLK, DFF1.Q -> DFF2.D & q1Out
+    // CLK -> DFF2.CLK, DFF2.Q -> q2Out
+    graph.addConnection(dIn.id, `${dIn.id}.out0`, dff1.id, `${dff1.id}.in0`);
+    graph.addConnection(clk.id, `${clk.id}.out0`, dff1.id, `${dff1.id}.in1`);
+
+    graph.addConnection(dff1.id, `${dff1.id}.out0`, dff2.id, `${dff2.id}.in0`);
+    graph.addConnection(clk.id, `${clk.id}.out0`, dff2.id, `${dff2.id}.in1`);
+
+    graph.addConnection(dff1.id, `${dff1.id}.out0`, q1Out.id, `${q1Out.id}.in0`);
+    graph.addConnection(dff2.id, `${dff2.id}.out0`, q2Out.id, `${q2Out.id}.in0`);
+
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    // Initial state: DFF1.Q = 0, DFF2.Q = 0
+    assertEqual(seq.getDFFState(dff1.id).Q, 0, 'DFF1 init');
+    assertEqual(seq.getDFFState(dff2.id).Q, 0, 'DFF2 init');
+
+    // Cycle 1: Set D=1, step clock rising edge
+    graph.setInputValue(dIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); // 0 -> 1 (rising edge)
+
+    // Nonblocking semantics: DFF1 sampled 1, DFF2 sampled DFF1's PRE-EDGE value (0)
+    assertEqual(seq.getDFFState(dff1.id).Q, 1, 'Cycle 1: DFF1 receives 1');
+    assertEqual(seq.getDFFState(dff2.id).Q, 0, 'Cycle 1: DFF2 receives 0 (sampled pre-edge)');
+
+    // Falling edge: no change
+    seq.clockStep(); // 1 -> 0
+    assertEqual(seq.getDFFState(dff1.id).Q, 1, 'Falling edge: DFF1 holds 1');
+    assertEqual(seq.getDFFState(dff2.id).Q, 0, 'Falling edge: DFF2 holds 0');
+
+    // Cycle 2: Set D=0, step clock rising edge
+    graph.setInputValue(dIn.id, 0);
+    sim.evaluate();
+    seq.clockStep(); // 0 -> 1 (rising edge)
+
+    // DFF1 samples D=0; DFF2 samples DFF1's PRE-EDGE value (1)
+    assertEqual(seq.getDFFState(dff1.id).Q, 0, 'Cycle 2: DFF1 receives 0');
+    assertEqual(seq.getDFFState(dff2.id).Q, 1, 'Cycle 2: DFF2 receives 1 (shifted from DFF1)');
+});
+
+await test('Unconnected DFF clock immunity: unclocked flip-flops hold state', () => {
+    const graph = new CircuitGraph();
+    const sim = new LogicSimulator(graph);
+    const seq = new SequentialEngine(graph, sim);
+
+    const dIn = graph.addComponent('INPUT', 50, 40, 'd');
+    const clk = graph.addComponent('CLOCK', 50, 120, 'clk');
+    const dff = graph.addComponent('DFF', 180, 50, 'ff_unclocked');
+
+    // Connect D only, leave CLK unconnected
+    graph.addConnection(dIn.id, `${dIn.id}.out0`, dff.id, `${dff.id}.in0`);
+
+    seq.initializeDFFs();
+    graph.setInputValue(dIn.id, 1);
+    sim.evaluate();
+
+    // Step clock rising edge
+    seq.clockStep(); // 0 -> 1
+    assertEqual(seq.getDFFState(dff.id).Q, 0, 'Unclocked DFF must NOT sample when CLK is unconnected');
+});
+
+await test('Verilog duplicate label handling: unique signal disambiguation', () => {
+    const graph = new CircuitGraph();
+    // Add two inputs both labeled 'A'
+    const in1 = graph.addComponent('INPUT', 50, 50, 'A');
+    const in2 = graph.addComponent('INPUT', 50, 120, 'A');
+    const andGate = graph.addComponent('AND', 200, 80);
+    const out = graph.addComponent('OUTPUT', 350, 80, 'Y');
+
+    graph.addConnection(in1.id, `${in1.id}.out0`, andGate.id, `${andGate.id}.in0`);
+    graph.addConnection(in2.id, `${in2.id}.out0`, andGate.id, `${andGate.id}.in1`);
+    graph.addConnection(andGate.id, `${andGate.id}.out0`, out.id, `${out.id}.in0`);
+
+    const vgen = new VerilogGenerator(graph);
+    const res = vgen.generate();
+    assertOk(res);
+
+    // Verify there are two distinct input wire declarations
+    const inputLines = res.code.split('\n').filter(l => l.includes('input wire'));
+    assertEqual(inputLines.length, 2, 'Should declare exactly 2 input wires');
+    assert(inputLines[0] !== inputLines[1], 'Input signal names must be distinct');
+});
+
+await test('Missing clock error detection: sequential circuit without clock rejected', () => {
+    const graph = new CircuitGraph();
+    const dIn = graph.addComponent('INPUT', 50, 50, 'd');
+    const dff = graph.addComponent('DFF', 180, 50, 'ff');
+    graph.addConnection(dIn.id, `${dIn.id}.out0`, dff.id, `${dff.id}.in0`);
+
+    // No CLOCK component in the circuit
+    const validation = graph.validateCircuit();
+    assert(!validation.valid, 'Circuit with DFF but no Clock must fail validation');
+    assert(validation.errors.some(e => e.includes('Clock')), 'Error must mention missing Clock');
+});
+
+await test('Multi-level logic tree: (A & B) | (C ^ D)', () => {
+    const graph = new CircuitGraph();
+    const sim = new LogicSimulator(graph);
+
+    const a = graph.addComponent('INPUT', 50, 30, 'a');
+    const b = graph.addComponent('INPUT', 50, 80, 'b');
+    const c = graph.addComponent('INPUT', 50, 130, 'c');
+    const d = graph.addComponent('INPUT', 50, 180, 'd');
+
+    const andG = graph.addComponent('AND', 180, 50);
+    const xorG = graph.addComponent('XOR', 180, 150);
+    const orG = graph.addComponent('OR', 300, 100);
+    const out = graph.addComponent('OUTPUT', 420, 100, 'y');
+
+    graph.addConnection(a.id, `${a.id}.out0`, andG.id, `${andG.id}.in0`);
+    graph.addConnection(b.id, `${b.id}.out0`, andG.id, `${andG.id}.in1`);
+
+    graph.addConnection(c.id, `${c.id}.out0`, xorG.id, `${xorG.id}.in0`);
+    graph.addConnection(d.id, `${d.id}.out0`, xorG.id, `${xorG.id}.in1`);
+
+    graph.addConnection(andG.id, `${andG.id}.out0`, orG.id, `${orG.id}.in0`);
+    graph.addConnection(xorG.id, `${xorG.id}.out0`, orG.id, `${orG.id}.in1`);
+
+    graph.addConnection(orG.id, `${orG.id}.out0`, out.id, `${out.id}.in0`);
+
+    // Test cases:
+    // A=1, B=1, C=0, D=0 -> (1&1)|(0^0) = 1|0 = 1
+    // A=0, B=1, C=1, D=1 -> (0&1)|(1^1) = 0|0 = 0
+    // A=0, B=0, C=1, D=0 -> (0&0)|(1^0) = 0|1 = 1
+    const testCases = [
+        [{ [a.id]: 1, [b.id]: 1, [c.id]: 0, [d.id]: 0 }, 1],
+        [{ [a.id]: 0, [b.id]: 1, [c.id]: 1, [d.id]: 1 }, 0],
+        [{ [a.id]: 0, [b.id]: 0, [c.id]: 1, [d.id]: 0 }, 1]
+    ];
+
+    for (const [inputs, exp] of testCases) {
+        const res = sim.evaluateWithInputs(inputs);
+        assertOk(res);
+        assertEqual(res.outputs[out.id], exp);
+    }
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  SUMMARY
 // ═════════════════════════════════════════════════════════════════════════════
 

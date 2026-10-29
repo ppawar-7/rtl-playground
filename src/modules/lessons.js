@@ -258,6 +258,19 @@ export const LESSONS = [
                 return { pass: false, message: 'Both the D input and CLK input of the flip-flop must be connected.' };
             }
 
+            // Verify output component is connected to Q
+            const outputs = graph.getOutputComponents();
+            if (outputs.length === 0) {
+                return { pass: false, message: 'Circuit must include an Output component to observe Q.' };
+            }
+            const qConnected = outputs.some(out => {
+                const inPin = out.inputs[0];
+                return inPin.connectedTo && inPin.connectedTo.componentId === dff.id;
+            });
+            if (!qConnected) {
+                return { pass: false, message: 'Connect the D Flip-Flop Q output to the Output component.' };
+            }
+
             // Check if sequential engine has recorded waveform steps
             const history = sequentialEngine ? sequentialEngine.getWaveformHistory() : [];
             if (history.length < 2) {

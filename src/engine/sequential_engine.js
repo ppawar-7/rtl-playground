@@ -92,15 +92,25 @@ export class SequentialEngine {
 
     /**
      * Process a rising clock edge.
-     * CRITICAL: All DFFs sample D simultaneously BEFORE any Q updates.
+     * CRITICAL:
+     * 1. Only DFFs connected to an active clock source are updated.
+     * 2. All active DFFs sample D simultaneously BEFORE any Q updates (nonblocking semantics).
      * @private
      */
     _processRisingEdge() {
         const dffs = this.graph.getDFFComponents();
 
-        // Phase 1: Sample all D inputs (using current/pre-edge values)
+        // Phase 1: Determine which DFFs are connected to an active clock source
+        const activeDFFs = dffs.filter(dff => {
+            const clkPin = dff.inputs[1]; // CLK pin
+            if (!clkPin || !clkPin.connectedTo) return false;
+            const srcComp = this.graph.getComponent(clkPin.connectedTo.componentId);
+            return srcComp && srcComp.type === 'CLOCK';
+        });
+
+        // Phase 2: Sample all D inputs (using current/pre-edge values)
         const sampledD = new Map();
-        for (const dff of dffs) {
+        for (const dff of activeDFFs) {
             const dPin = dff.inputs[0]; // D input
             let dValue;
             if (dPin.connectedTo) {
@@ -111,8 +121,8 @@ export class SequentialEngine {
             sampledD.set(dff.id, dValue);
         }
 
-        // Phase 2: Update all Q outputs simultaneously
-        for (const dff of dffs) {
+        // Phase 3: Update all Q outputs simultaneously
+        for (const dff of activeDFFs) {
             const dValue = sampledD.get(dff.id);
             const state = this.dffStates.get(dff.id);
             if (state) {

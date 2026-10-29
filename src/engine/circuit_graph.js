@@ -619,6 +619,21 @@ export class CircuitGraph extends EventEmitter {
             }
         }
 
+        // Check sequential requirements (DFF must have clock source)
+        const dffs = this.getDFFComponents();
+        const clocks = this.getClockComponents();
+        if (dffs.length > 0) {
+            if (clocks.length === 0) {
+                errors.push('Circuit contains D Flip-Flop(s) but no Clock component');
+            }
+            for (const dff of dffs) {
+                const clkPin = dff.inputs[1];
+                if (!clkPin || clkPin.connectedTo === null) {
+                    errors.push(`D Flip-Flop "${dff.label}" (${dff.id}): CLK input must be connected to a Clock`);
+                }
+            }
+        }
+
         return {
             valid: errors.length === 0,
             warnings,
