@@ -8,7 +8,7 @@
 | Phase A | Multi-Bit Signals & Vector Engine | Complete | 71 / 71 | `vector_model.js` with full bitwise/arith/slice/concat/mux |
 | Phase B | Arithmetic & Datapath Playground | Complete | 59 / 59 | Ripple-carry adder, Educational ALU, flags, Yosys-verified Verilog |
 | Phase C | Registers, Counters & Sequential Datapaths | Complete | 66 / 66 | Multi-bit DFF registers, Up/Down/Mod counters, Shift registers |
-| Phase D | Finite State Machine Playground | Next | - | Deterministic Moore/Mealy FSM model, Verilog generator |
-| Phase E | Advanced RTL Educational Curriculum | Pending | - | 10 interactive lessons with behavioral verification |
+| Phase D | Finite State Machine Playground | Complete | 41 / 41 | Deterministic Moore/Mealy FSM model, 4 presets, Yosys Verilog synthesis |
+| Phase E | Advanced RTL Educational Curriculum | Next | - | 10 interactive lessons with behavioral verification |
 | Phase F | Verification & Hardening | Pending | - | Property tests, Yosys synthesis, headless browser tests |
 | Phase G | Documentation & Future Integration | Pending | - | Integration blueprint and final reports |

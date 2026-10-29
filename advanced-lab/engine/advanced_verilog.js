@@ -372,7 +372,7 @@ endmodule
             const moore = (fsm.mooreOutputs && fsm.mooreOutputs[s]) || {};
             const assigns = outputs.map(o => {
                 const val = moore[o.name] !== undefined ? moore[o.name] : 0;
-                return `                ${o.name} = ${o.width > 1 ? `${o.width}'d${val}` : `${val}'b${val}`};`;
+                return `                ${o.name} = ${o.width > 1 ? `${o.width}'d${val}` : `1'b${val ? 1 : 0}`};`;
             }).join('\n');
             return `            STATE_${s}: begin\n${assigns}\n            end`;
         }).join('\n');
