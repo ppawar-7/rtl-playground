@@ -85,6 +85,8 @@ RTL Playground has completed the **Phase 6 Autonomous Integration Baseline** on 
 2. **Combinational feedback loops rejected**: Strict cycle detection prevents asynchronous latches by design (Decision 007).
 3. **Truth table size limit**: Restricted to $\le 4$ independent inputs ($2^4 = 16$ rows) to maintain UI responsiveness.
 4. **Background process preservation**: Background long-duration stress test (PID 22852) is currently testing the Phase 5 baseline on port 8080/8181. Integration tests use port 8088 / 8182 / 9334 to prevent collisions.
+5. **HDL uninitialized state vs Schematic defaults**: Real Verilog registers power on as `1'bx` unless reset or initialized in the testbench, whereas RTL Playground schematics default DFF state to `Q = 0` at startup.
+6. **3-value logic vs Verilog 4-state**: RTL Playground propagates `null` when inputs are disconnected/unspecified, whereas Verilog uses `X` (unknown) and `Z` (high-impedance) with Boolean masking ($1 \lor X = 1$).
 
 ---
 
@@ -116,23 +118,23 @@ RTL Playground has completed the **Phase 6 Autonomous Integration Baseline** on 
 cd C:\Users\pranil\Documents\PD-Playground\rtl-playground-integration
 
 # 1. Run unit & regression tests in Node.js (49 tests):
-npm test
+cmd /c npm test
 # or: node tests/tests.js
 
 # 2. Run real Verilog HDL verification via WebAssembly Yosys (11 benchmarks):
-npm run test:yosys
+cmd /c npm run test:yosys
 # or: node tests/verilog_verification/run_yosys_verification.js
 
 # 3. Run event-driven Verilog simulation via WebAssembly Icarus Verilog (11 benchmarks):
-npm run test:iverilog
+cmd /c npm run test:iverilog
 # or: node tests/verilog_verification/run_iverilog_simulation.js
 
 # 4. Run cross-engine differential simulation (JS Engine vs Compiled Verilog):
-npm run test:differential
+cmd /c npm run test:differential
 # or: node tests/verilog_verification/run_differential_simulation.js
 
 # 5. Run automated browser tests in Microsoft Edge (via CDP on port 8088):
-npm run test:browser
+cmd /c npm run test:browser
 # or: node tests/browser_smoke_test.js
 
 # 6. Run a bounded smoke check of the stress testing harness (30s):

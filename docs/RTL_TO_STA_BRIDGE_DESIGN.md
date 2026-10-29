@@ -72,6 +72,12 @@ Because RTL Playground simulates idealized digital logic without propagation del
 
 ### 3.1 Standard Cell Model (Nominal 65nm / 45nm Educational Library)
 
+> [!IMPORTANT]
+> **Pedagogical Disclaimer — Illustrative Delay Approximations:**
+> The delay metrics ($t_{\text{pd}}$, $t_{\text{cq}}$, $t_{\text{setup}}$, $t_{\text{hold}}$) and input capacitances ($C_{\text{in}}$) tabulated below are **simplified educational approximations** modeled after generic nominal 65nm/45nm planar CMOS standard cell characteristics. They are intended strictly for teaching arrival time, required time, and slack concepts.
+> 
+> They are **NOT** foundry-characterized, silicon-calibrated sign-off library data (such as TSMC, Intel, or GlobalFoundries NLDM/CCS Liberty files). Real nanometer standard cell delays are highly nonlinear functions of input transition time (slew), capacitive load, power supply voltage droop, operating temperature, and process corner variations ($PVT$).
+
 The bridge provides a standard cell library descriptor defining nominal delays ($t_{\text{nom}}$), input capacitance ($C_{\text{in}}$), output drive resistance ($R_{\text{drive}}$), and flip-flop setup/hold margins:
 
 | Generic Component | Standard Cell Name | Delay Metric | Nominal Value | Input Cap ($C_{\text{in}}$) |
@@ -348,15 +354,25 @@ and watch setup slack go negative (timing violation)!
 
 ## 8. Implementation Strategy (Future Milestones)
 
+> [!WARNING]
+> **Strict Repository Isolation & Two-Sided Engineering Requirement:**
+> The existing STA Playground repository (`ppawar-7/sta-playground`) is currently **protected and strictly read-only** ("Do not modify, refactor, or break my existing STA project").
+> 
+> STA Playground currently has its own internal graph model and circuit presets. It **does not yet possess** an ingestion endpoint or importer for external JSON schemas. Therefore, the bridge **cannot** operate out-of-the-box with "zero changes" in STA Playground. End-to-end operation requires two coordinated engineering deliverables:
+> 1. An **Exporter** in RTL Playground (`src/bridge/sta_exporter.js`) to generate the valid exchange schema.
+> 2. An **Importer Adapter** in STA Playground to parse the schema and map it into STA's internal timing data structures.
+> 
+> Development of the bridge should only proceed when authorized to implement the importer inside STA Playground.
+
 When ready to implement this bridge, the recommended engineering steps are:
 1. **Module `src/bridge/sta_exporter.js` in RTL Playground**:
-   - Implements graph traversal, cell binding, and JSON generation.
-2. **"Analyze in STA Playground" Button in Top Header**:
-   - Adds export trigger in `index.html`.
+   - Implements graph traversal, technology cell binding, and strict JSON validation.
+2. **"Analyze in STA Playground" UI Trigger in Top Header**:
+   - Adds export button and educational explanation modal in `index.html`.
 3. **Cross-Origin / LocalStorage Bridge Protocol**:
-   - Stores payload in `localStorage.setItem('pd_bridge_circuit', json)` and launches STA Playground with URL param `?source=rtl_playground`.
-4. **Ingestion Adapter in STA Playground**:
-   - Reads `pd_bridge_circuit` and builds the timing graph seamlessly.
+   - Stores schema payload in `localStorage.setItem('pd_bridge_circuit', json)` and launches STA Playground with URL param `?source=rtl_playground`.
+4. **Ingestion Adapter in STA Playground (Separate Dedicated Effort)**:
+   - Develops an ingestion adapter inside `sta-playground` to deserialize `pd_bridge_circuit` and build the native timing graph.
 
 ---
 

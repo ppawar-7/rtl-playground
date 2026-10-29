@@ -74,6 +74,9 @@ Last Updated: 2026-10-29 01:00 EDT
 ### Phase 5: HDL Verification & RTL Learning Expansion
 - [x] `tests/verilog_verification/generate_verification_suites.js` — Automated generation of synthesizable Verilog modules and self-checking testbenches for 6 benchmark designs
 - [x] `tests/verilog_verification/run_yosys_verification.js` — WebAssembly Yosys compiler pipeline verifying AST, hierarchy, optimization, and assert passes (6 passed, 0 failed)
+- [x] `tests/verilog_verification/run_iverilog_simulation.js` — Event-driven HDL simulation runner via `@veriflow/iverilog-wasm` executing all 6 benchmark testbenches (6 passed, 0 failed)
+- [x] `tests/verilog_verification/run_differential_simulation.js` — Cross-engine differential verification suite comparing JavaScript simulation vs compiled Verilog execution across 7 benchmarks (28/28 checks passed, 0 mismatches)
+- [x] Documented simulation semantics: 4-state HDL uninitialized registers (`1'bx`) vs schematic power-on default (`Q=0`), and 3-value educational logic vs Verilog $X/Z$ propagation
 - [x] Cleaned up unused wire emissions in `verilog_generator.js`
 - [x] Synchronized line-by-line Verilog highlighting upon component selection
 - [x] "RTL Hardware Mapping" inspector card detailing standard cell synthesis targets and timing models
@@ -81,7 +84,7 @@ Last Updated: 2026-10-29 01:00 EDT
 - [x] 4 new guided learning lessons (MUX conditional selection, Clock Enable, Synchronous Reset, Pipeline Timing) bringing total to 8 lessons
 - [x] 3 new circuit presets (`reg-enable`, `reg-sync-reset`, `shift-reg-2stage`) bringing total to 9 presets
 - [x] Enhanced browser automation with manual palette-to-canvas placement, pin wiring, signal toggle, inspector verification, and component deletion
-- [x] `docs/RTL_TO_STA_BRIDGE_DESIGN.md` — Complete architectural proposal for integration with STA Playground
+- [x] `docs/RTL_TO_STA_BRIDGE_DESIGN.md` — Complete architectural proposal for integration with STA Playground (with educational delay disclaimers and explicit importer requirements)
 
 ### Phase 6: Interactive RTL Coding Fundamentals & Autonomous Integration
 - [x] **Interactive Verilog Explainer**:
