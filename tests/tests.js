@@ -956,11 +956,11 @@ await test('Multi-level logic tree: (A & B) | (C ^ D)', () => {
 
 // ─── 13. PHASE 5 EXPANDED RTL LEARNING & VERIFIED PATTERNS ────────────────────
 
-log('\n📋 Phase 5 Expanded RTL Learning & Presets');
+log('\n📋 Phase 5 & 6 Expanded RTL Learning & Presets');
 
-await test('All 9 educational presets deserialize and validate without error', () => {
+await test('All 16 educational presets deserialize and validate without error', () => {
     const presetKeys = Object.keys(PRESETS);
-    assertEqual(presetKeys.length, 9, 'Should have exactly 9 educational presets');
+    assertEqual(presetKeys.length, 16, 'Should have exactly 16 educational presets');
 
     for (const key of presetKeys) {
         const preset = PRESETS[key];
@@ -1069,8 +1069,8 @@ await test('2-Stage Shift Register preset: cycle-by-cycle pipeline step', () => 
     assertEqual(seq.getDFFState(dffs[1].id).Q, 1, 'Stage 2 should receive pulse after 2 cycles');
 });
 
-await test('All 8 Guided Lessons validate both starter failure and correct solution', () => {
-    assertEqual(LESSONS.length, 8, 'Should have exactly 8 guided lessons');
+await test('All 12 Guided Lessons validate both starter failure and correct solution', () => {
+    assertEqual(LESSONS.length, 12, 'Should have exactly 12 guided lessons');
 
     for (const lesson of LESSONS) {
         const g = new CircuitGraph();
@@ -1084,6 +1084,306 @@ await test('All 8 Guided Lessons validate both starter failure and correct solut
         const starterCheck = lesson.validate(g, sim, seq);
         assert(!starterCheck.pass, `Lesson '${lesson.id}' starter circuit must not prematurely pass`);
     }
+
+    // Solution validation checks for all 12 lessons
+    const solutions = [
+        { id: 'lesson-1-gates', preset: 'and-gate' },
+        { id: 'lesson-2-half-adder', preset: 'half-adder' },
+        { id: 'lesson-3-mux', preset: 'mux-2to1' },
+        { id: 'lesson-4-dff', preset: 'dff-demo', preStep: true },
+        { id: 'lesson-5-mux-cond', preset: 'mux-cond' },
+        { id: 'lesson-6-reg-enable', preset: 'reg-enable' },
+        { id: 'lesson-7-sync-reset', preset: 'reg-sync-reset' },
+        { id: 'lesson-8-clock-timing', preset: 'shift-reg-2stage' },
+        { id: 'lesson-9-full-adder', preset: 'full-adder' },
+        { id: 'lesson-10-reg-enable', preset: 'dff-enable' },
+        { id: 'lesson-11-sync-reset-priority', preset: 'dff-esr-priority' },
+        { id: 'lesson-12-blocking-nonblocking', preset: 'blocking-vs-nonblocking' }
+    ];
+
+    for (const sol of solutions) {
+        const lesson = LESSONS.find(l => l.id === sol.id);
+        const g = new CircuitGraph();
+        g.deserialize(PRESETS[sol.preset].circuit);
+        const sim = new LogicSimulator(g);
+        const seq = new SequentialEngine(g, sim);
+        if (sol.preStep) {
+            seq.clockStep();
+            seq.clockStep();
+        }
+        const check = lesson.validate(g, sim, seq);
+        assert(check.pass, `Lesson '${sol.id}' valid solution must pass validation: ${check.message}`);
+    }
+});
+
+// ─── 14. PHASE 6 INTERACTIVE RTL CODING FUNDAMENTALS ──────────────────────────
+
+log('\n📋 Phase 6 Interactive RTL Coding Fundamentals');
+
+await test('DFFE component: enable gating, state retention, and nonblocking Verilog', () => {
+    const g = new CircuitGraph();
+    const dIn = g.addComponent('INPUT', 50, 50, 'd_in');
+    const clk = g.addComponent('CLOCK', 50, 120, 'clk');
+    const enIn = g.addComponent('INPUT', 50, 190, 'en_in');
+    const dffe = g.addComponent('DFFE', 200, 80, 'ff_en');
+    const outQ = g.addComponent('OUTPUT', 350, 80, 'q_out');
+
+    g.addConnection(dIn.id, `${dIn.id}.out0`, dffe.id, `${dffe.id}.in0`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffe.id, `${dffe.id}.in1`);
+    g.addConnection(enIn.id, `${enIn.id}.out0`, dffe.id, `${dffe.id}.in2`);
+    g.addConnection(dffe.id, `${dffe.id}.out0`, outQ.id, `${outQ.id}.in0`);
+
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    assertEqual(seq.getDFFState(dffe.id).Q, 0, 'Initial Q should be 0');
+
+    // 1. Clock rising edge with EN=0, D=1 -> Q must remain 0 (state retention)
+    g.setInputValue(dIn.id, 1);
+    g.setInputValue(enIn.id, 0);
+    sim.evaluate();
+
+    // Toggle 0 -> 1 (rising edge)
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffe.id).Q, 0, 'Q must remain 0 when EN=0 on rising edge');
+
+    // Toggle 1 -> 0 (falling edge) -> no state update
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffe.id).Q, 0, 'Falling edge must not alter state');
+
+    // 2. Clock rising edge with EN=1, D=1 -> Q updates to 1
+    g.setInputValue(enIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); // rising edge
+    assertEqual(seq.getDFFState(dffe.id).Q, 1, 'Q must load 1 when EN=1 on rising edge');
+    seq.clockStep(); // falling edge
+
+    // 3. EN=0, D=0 -> Q must retain 1 across multiple clock cycles
+    g.setInputValue(dIn.id, 0);
+    g.setInputValue(enIn.id, 0);
+    sim.evaluate();
+    seq.clockStep(); // rising edge
+    seq.clockStep(); // falling edge
+    seq.clockStep(); // second rising edge
+    seq.clockStep(); // second falling edge
+    assertEqual(seq.getDFFState(dffe.id).Q, 1, 'Q must hold 1 when EN=0 despite D=0');
+
+    // 4. Verify generated Verilog nonblocking enable construct
+    const vgen = new VerilogGenerator(g);
+    const vRes = vgen.generate('dffe_test');
+    assert(vRes.ok, 'Verilog generation must succeed for DFFE');
+    assert(vRes.code.includes('if (en_in) begin'), 'Must generate if (en) check');
+    assert(vRes.code.includes('ff_en_q <= d_in;'), 'Must use nonblocking assignment <= for DFFE');
+});
+
+await test('DFFSR component: synchronous reset on clock edge and falling-edge immunity', () => {
+    const g = new CircuitGraph();
+    const dIn = g.addComponent('INPUT', 50, 50, 'd_in');
+    const clk = g.addComponent('CLOCK', 50, 120, 'clk');
+    const rstIn = g.addComponent('INPUT', 50, 190, 'rst_in');
+    const dffsr = g.addComponent('DFFSR', 200, 80, 'ff_sr');
+    const outQ = g.addComponent('OUTPUT', 350, 80, 'q_out');
+
+    g.addConnection(dIn.id, `${dIn.id}.out0`, dffsr.id, `${dffsr.id}.in0`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffsr.id, `${dffsr.id}.in1`);
+    g.addConnection(rstIn.id, `${rstIn.id}.out0`, dffsr.id, `${dffsr.id}.in2`);
+    g.addConnection(dffsr.id, `${dffsr.id}.out0`, outQ.id, `${outQ.id}.in0`);
+
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    // 1. Normal load: RST=0, D=1 -> posedge clk -> Q becomes 1
+    g.setInputValue(rstIn.id, 0);
+    g.setInputValue(dIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); // rising edge
+    seq.clockStep(); // falling edge
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'Q must load 1 when RST=0');
+
+    // 2. Asynchronous immunity: Assert RST=1 while clock is static -> Q does NOT reset immediately!
+    g.setInputValue(rstIn.id, 1);
+    sim.evaluate();
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'Synchronous reset must NOT change Q while clock is static');
+
+    // 3. Falling edge immunity: Toggle falling edge -> Q still does NOT reset
+    seq.clockState = 1;
+    seq.clockStep(); // 1 -> 0 falling edge
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'Synchronous reset must NOT take effect on falling edge');
+
+    // 4. Active rising edge (0 -> 1) -> Q synchronously clears to 0!
+    seq.clockStep(); // 0 -> 1 rising edge
+    assertEqual(seq.getDFFState(dffsr.id).Q, 0, 'Q must synchronously clear to 0 on rising clock edge when RST=1');
+
+    // 5. Deassert RST: RST=0 -> normal operation resumes
+    g.setInputValue(rstIn.id, 0);
+    g.setInputValue(dIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); // falling edge
+    seq.clockStep(); // rising edge
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'Q must resume normal loading when RST returns to 0');
+
+    // 6. Verify generated Verilog synchronous reset construct
+    const vgen = new VerilogGenerator(g);
+    const vRes = vgen.generate('dffsr_test');
+    assert(vRes.ok, 'Verilog generation must succeed for DFFSR');
+    assert(vRes.code.includes('if (rst_in) begin'), 'Must generate if (rst) check');
+    assert(vRes.code.includes("ff_sr_q <= 1'b0;"), 'Must assign 1b0 on synchronous reset');
+    assert(vRes.code.includes('ff_sr_q <= d_in;'), 'Must use nonblocking <= for data load');
+});
+
+await test('DFFESR component: synchronous reset strictly overrides clock enable (priority)', () => {
+    const g = new CircuitGraph();
+    const dIn = g.addComponent('INPUT', 50, 40, 'd_in');
+    const clk = g.addComponent('CLOCK', 50, 100, 'clk');
+    const enIn = g.addComponent('INPUT', 50, 160, 'en_in');
+    const rstIn = g.addComponent('INPUT', 50, 220, 'rst_in');
+    const dffesr = g.addComponent('DFFESR', 220, 80, 'ff_esr');
+    const outQ = g.addComponent('OUTPUT', 380, 80, 'q_out');
+
+    g.addConnection(dIn.id, `${dIn.id}.out0`, dffesr.id, `${dffesr.id}.in0`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffesr.id, `${dffesr.id}.in1`);
+    g.addConnection(enIn.id, `${enIn.id}.out0`, dffesr.id, `${dffesr.id}.in2`);
+    g.addConnection(rstIn.id, `${rstIn.id}.out0`, dffesr.id, `${dffesr.id}.in3`);
+    g.addConnection(dffesr.id, `${dffesr.id}.out0`, outQ.id, `${outQ.id}.in0`);
+
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    // Step 1: Load 1 (RST=0, EN=1, D=1)
+    g.setInputValue(rstIn.id, 0);
+    g.setInputValue(enIn.id, 1);
+    g.setInputValue(dIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(dffesr.id).Q, 1, 'Q should be loaded with 1');
+
+    // Step 2: Priority Conflict: Both RST=1 and EN=1 active simultaneously with D=1
+    // Documented Priority Rule: Synchronous Reset MUST win over Enable!
+    g.setInputValue(rstIn.id, 1);
+    g.setInputValue(enIn.id, 1);
+    g.setInputValue(dIn.id, 1);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(dffesr.id).Q, 0, 'Synchronous Reset must strictly override Enable when both are active');
+
+    // Step 3: Deassert RST, disable EN (RST=0, EN=0, D=1) -> Q holds 0
+    g.setInputValue(rstIn.id, 0);
+    g.setInputValue(enIn.id, 0);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(dffesr.id).Q, 0, 'Q must retain 0 when EN=0');
+
+    // Step 4: Verify generated Verilog priority structure
+    const vgen = new VerilogGenerator(g);
+    const vRes = vgen.generate('dffesr_test');
+    assert(vRes.ok, 'Verilog generation must succeed for DFFESR');
+    assert(vRes.code.includes('if (rst_in) begin'), 'Reset must be top condition');
+    assert(vRes.code.includes('else if (en_in) begin'), 'Enable must be secondary else-if condition');
+});
+
+await test('Full Adder preset: complete 8-state truth table verification', () => {
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['full-adder'].circuit);
+    const sim = new LogicSimulator(g);
+
+    const inA = Array.from(g.components.values()).find(c => c.label === 'A');
+    const inB = Array.from(g.components.values()).find(c => c.label === 'B');
+    const inCin = Array.from(g.components.values()).find(c => c.label === 'CIN');
+    const outSum = Array.from(g.components.values()).find(c => c.label === 'SUM');
+    const outCout = Array.from(g.components.values()).find(c => c.label === 'COUT');
+
+    for (let a = 0; a <= 1; a++) {
+        for (let b = 0; b <= 1; b++) {
+            for (let cin = 0; cin <= 1; cin++) {
+                const expSum = (a ^ b ^ cin);
+                const expCout = ((a & b) | (cin & (a ^ b)));
+
+                const res = sim.evaluateWithInputs({
+                    [inA.id]: a,
+                    [inB.id]: b,
+                    [inCin.id]: cin
+                });
+                assertOk(res);
+                assertEqual(res.outputs[outSum.id], expSum, `Full Adder SUM mismatch for A=${a}, B=${b}, Cin=${cin}`);
+                assertEqual(res.outputs[outCout.id], expCout, `Full Adder COUT mismatch for A=${a}, B=${b}, Cin=${cin}`);
+            }
+        }
+    }
+});
+
+await test('Procedural Verilog generation: synthesizable always @(*) and case statement for MUX', () => {
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['mux-2to1'].circuit);
+    const vgen = new VerilogGenerator(g);
+
+    // Continuous assign style
+    const contRes = vgen.generate('mux_cont');
+    assert(contRes.ok, 'Continuous generation must succeed');
+    assert(contRes.code.includes('assign y = (sel ? b : a);'), 'Continuous style must contain ternary assign');
+
+    // Procedural style with always @(*) and case
+    const procRes = vgen.generateProcedural('mux_proc');
+    assert(procRes.ok, 'Procedural generation must succeed');
+    assert(procRes.code.includes('always @(*) begin'), 'Procedural style must contain always @(*)');
+    assert(procRes.code.includes('case (sel)'), 'Procedural MUX must generate case statement');
+    assert(procRes.code.includes("1'b0: y = a;"), 'Case 0 must select A');
+    assert(procRes.code.includes("1'b1: y = b;"), 'Case 1 must select B');
+    assert(procRes.code.includes('default: y = 1\'bx;'), 'Case must contain default clause');
+});
+
+await test('Equivalence: generated Verilog and JavaScript simulation describe identical hardware', () => {
+    // 1. Combinational MUX equivalence
+    const gMux = new CircuitGraph();
+    gMux.deserialize(PRESETS['mux-2to1'].circuit);
+    const simMux = new LogicSimulator(gMux);
+    const vgenMux = new VerilogGenerator(gMux);
+    const verilogMux = vgenMux.generate('mux_equiv').code;
+
+    for (let s = 0; s <= 1; s++) {
+        for (let a = 0; a <= 1; a++) {
+            for (let b = 0; b <= 1; b++) {
+                const inA = Array.from(gMux.components.values()).find(c => c.label === 'A');
+                const inB = Array.from(gMux.components.values()).find(c => c.label === 'B');
+                const inSel = Array.from(gMux.components.values()).find(c => c.label === 'Sel');
+                const outY = Array.from(gMux.components.values()).find(c => c.label === 'Y');
+
+                const jsResult = simMux.evaluateWithInputs({ [inA.id]: a, [inB.id]: b, [inSel.id]: s }).outputs[outY.id];
+                const verilogSemanticResult = s === 1 ? b : a;
+                assertEqual(jsResult, verilogSemanticResult, `MUX JS output (${jsResult}) must match Verilog semantics (${verilogSemanticResult})`);
+            }
+        }
+    }
+
+    // 2. Sequential DFFE equivalence
+    const gDffe = new CircuitGraph();
+    gDffe.deserialize(PRESETS['dff-enable'].circuit);
+    const simDffe = new LogicSimulator(gDffe);
+    const seqDffe = new SequentialEngine(gDffe, simDffe);
+    seqDffe.initializeDFFs();
+
+    const dIn = Array.from(gDffe.components.values()).find(c => c.label === 'D');
+    const enIn = Array.from(gDffe.components.values()).find(c => c.label === 'EN');
+    const dffeComp = gDffe.getDFFComponents()[0];
+
+    // Check with EN=1
+    gDffe.setInputValue(dIn.id, 1);
+    gDffe.setInputValue(enIn.id, 1);
+    simDffe.evaluate();
+    seqDffe.clockStep(); seqDffe.clockStep();
+    assertEqual(seqDffe.getDFFState(dffeComp.id).Q, 1, 'JS DFFE loads 1 on rising clock');
+
+    // Check with EN=0 (retain)
+    gDffe.setInputValue(dIn.id, 0);
+    gDffe.setInputValue(enIn.id, 0);
+    simDffe.evaluate();
+    seqDffe.clockStep(); seqDffe.clockStep();
+    assertEqual(seqDffe.getDFFState(dffeComp.id).Q, 1, 'JS DFFE retains 1 when EN=0');
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

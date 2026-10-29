@@ -312,6 +312,40 @@ export class CircuitEditor {
                 `;
                 break;
 
+            case 'DFFE':
+                shapeSvg = `
+                    <rect class="gate-body" x="10" y="5" width="52" height="66" rx="3" />
+                    <polyline points="10,50 18,55 10,60" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <text class="gate-label" x="36" y="20" font-size="9">DFFE</text>
+                    <text class="pin-label-text" x="16" y="22">D</text>
+                    <text class="pin-label-text" x="16" y="38">EN</text>
+                    <text class="pin-label-text" x="52" y="22">Q</text>
+                `;
+                break;
+
+            case 'DFFSR':
+                shapeSvg = `
+                    <rect class="gate-body" x="10" y="5" width="54" height="66" rx="3" />
+                    <polyline points="10,50 18,55 10,60" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <text class="gate-label" x="37" y="20" font-size="8">DFF-SR</text>
+                    <text class="pin-label-text" x="16" y="22">D</text>
+                    <text class="pin-label-text" x="16" y="38">RST</text>
+                    <text class="pin-label-text" x="54" y="22">Q</text>
+                `;
+                break;
+
+            case 'DFFESR':
+                shapeSvg = `
+                    <rect class="gate-body" x="10" y="5" width="56" height="78" rx="3" />
+                    <polyline points="10,62 18,67 10,72" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+                    <text class="gate-label" x="38" y="18" font-size="7.5">DFF-ESR</text>
+                    <text class="pin-label-text" x="16" y="20">D</text>
+                    <text class="pin-label-text" x="16" y="36">EN</text>
+                    <text class="pin-label-text" x="16" y="52">RST</text>
+                    <text class="pin-label-text" x="56" y="20">Q</text>
+                `;
+                break;
+
             default:
                 shapeSvg = `
                     <rect class="gate-body" x="0" y="0" width="${width}" height="${height}" rx="4" />
@@ -408,6 +442,22 @@ export class CircuitEditor {
                 if (index === 0) return { x: 2, y: 20, leadX: 8 }; // D
                 return { x: 2, y: 50, leadX: 8 };                  // CLK
             }
+            if (comp.type === 'DFFE') {
+                if (index === 0) return { x: 2, y: 18, leadX: 8 }; // D
+                if (index === 1) return { x: 2, y: 55, leadX: 8 }; // CLK
+                return { x: 2, y: 35, leadX: 8 };                  // EN
+            }
+            if (comp.type === 'DFFSR') {
+                if (index === 0) return { x: 2, y: 18, leadX: 8 }; // D
+                if (index === 1) return { x: 2, y: 55, leadX: 8 }; // CLK
+                return { x: 2, y: 35, leadX: 8 };                  // RST
+            }
+            if (comp.type === 'DFFESR') {
+                if (index === 0) return { x: 2, y: 18, leadX: 8 }; // D
+                if (index === 1) return { x: 2, y: 67, leadX: 8 }; // CLK
+                if (index === 2) return { x: 2, y: 34, leadX: 8 }; // EN
+                return { x: 2, y: 50, leadX: 8 };                  // RST
+            }
             // Standard 2-input gate
             if (comp.inputs.length === 2) {
                 return { x: 2, y: index === 0 ? 15 : 35, leadX: 8 };
@@ -432,6 +482,15 @@ export class CircuitEditor {
             }
             if (comp.type === 'DFF') {
                 return { x: 68, y: 20, leadX: -8 };
+            }
+            if (comp.type === 'DFFE') {
+                return { x: 70, y: 18, leadX: -8 };
+            }
+            if (comp.type === 'DFFSR') {
+                return { x: 72, y: 18, leadX: -8 };
+            }
+            if (comp.type === 'DFFESR') {
+                return { x: 74, y: 18, leadX: -8 };
             }
             return { x: 62, y: 25, leadX: -5 };
         }

@@ -149,7 +149,34 @@ export class ComponentLibrary {
                                 <polyline points="4,12 8,14 4,16" />
                             </svg>
                         </span>
-                        <span>D Flip-Flop</span>
+                        <span>DFF</span>
+                    </button>
+                    <button class="palette-item" data-type="DFFE" title="D Flip-Flop with Clock Enable (Loads D when EN=1, holds when EN=0)">
+                        <span class="palette-item-icon">
+                            <svg viewBox="0 0 30 20" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="4" y="2" width="22" height="16" rx="2" />
+                                <text x="14" y="14" font-size="7" fill="currentColor">EN</text>
+                            </svg>
+                        </span>
+                        <span>DFF + EN</span>
+                    </button>
+                    <button class="palette-item" data-type="DFFSR" title="D Flip-Flop with Synchronous Reset (Forces Q=0 on posedge clk when RST=1)">
+                        <span class="palette-item-icon">
+                            <svg viewBox="0 0 30 20" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="4" y="2" width="22" height="16" rx="2" />
+                                <text x="13" y="14" font-size="7" fill="currentColor">RST</text>
+                            </svg>
+                        </span>
+                        <span>DFF + RST</span>
+                    </button>
+                    <button class="palette-item" data-type="DFFESR" title="DFF with Enable & Sync Reset (RST takes priority over EN)">
+                        <span class="palette-item-icon">
+                            <svg viewBox="0 0 30 20" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="4" y="2" width="22" height="16" rx="2" />
+                                <text x="11" y="14" font-size="6" fill="currentColor">E/R</text>
+                            </svg>
+                        </span>
+                        <span>DFF + EN/RST</span>
                     </button>
                 </div>
             </div>

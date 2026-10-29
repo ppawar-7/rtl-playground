@@ -30,11 +30,18 @@
                     <option value="or-gate">2-Input OR Gate</option>
                     <option value="not-gate">1-Bit Inverter (NOT)</option>
                     <option value="half-adder">1-Bit Half Adder</option>
+                    <option value="full-adder">1-Bit Full Adder</option>
                     <option value="mux-2to1">2:1 Multiplexer</option>
+                    <option value="mux-cond">2:1 MUX (Conditional ? :)</option>
+                    <option value="mux-case">2:1 MUX (Case Selection)</option>
                     <option value="dff-demo">D Flip-Flop Register Demo</option>
-                    <option value="reg-enable">Register with Clock Enable</option>
-                    <option value="reg-sync-reset">Register with Synchronous Reset</option>
+                    <option value="dff-enable">DFF with Enable (DFFE)</option>
+                    <option value="dff-sync-reset">DFF with Synchronous Reset</option>
+                    <option value="dff-esr-priority">Register with EN & RST Priority</option>
+                    <option value="reg-enable">Register with Clock Enable (MUX)</option>
+                    <option value="reg-sync-reset">Register with Synchronous Reset (Gate)</option>
                     <option value="shift-reg-2stage">2-Stage Shift Register Pipeline</option>
+                    <option value="blocking-vs-nonblocking">Blocking vs Nonblocking Semantics</option>
                 </select>
 
                 <button id="btn-reset-circuit" class="btn btn-sm" title="Clear all components and reset">
@@ -138,12 +145,34 @@
                                 Synthesizable IEEE 1364-2001 Verilog HDL
                             </span>
                             <div style="display:flex; align-items:center; gap:8px;">
+                                <div class="verilog-style-switch" style="display:flex; gap:4px; margin-right:8px;">
+                                    <button id="btn-style-continuous" class="btn btn-sm btn-secondary active" title="Continuous assign & posedge clk style">Continuous (assign)</button>
+                                    <button id="btn-style-procedural" class="btn btn-sm btn-secondary" title="Procedural always @(*) with case & posedge clk style">Procedural (always / case)</button>
+                                </div>
                                 <span id="verilog-sync-indicator" style="font-size:11px; color:var(--accent-primary); display:none;">
                                     ● Selection Synced
                                 </span>
                                 <button id="copy-verilog-btn" class="btn btn-sm btn-primary">
                                     Copy Verilog
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Verilog Explanation & RTL Construct Explainer -->
+                        <div class="verilog-explainer-bar" id="verilog-explainer-bar">
+                            <div class="explainer-controls">
+                                <span class="explainer-heading">RTL Construct Explainer:</span>
+                                <div class="explainer-chips" id="explainer-chips">
+                                    <button class="explainer-chip active" data-construct="assign">Continuous "assign"</button>
+                                    <button class="explainer-chip" data-construct="always-comb">Combinational "always @(*)"</button>
+                                    <button class="explainer-chip" data-construct="if-else">Conditional "if/else"</button>
+                                    <button class="explainer-chip" data-construct="case">MUX Selection "case"</button>
+                                    <button class="explainer-chip" data-construct="always-ff">Clocked "always @(posedge clk)"</button>
+                                    <button class="explainer-chip" data-construct="blocking-nonblocking">Blocking (=) vs Nonblocking (&lt;=)</button>
+                                </div>
+                            </div>
+                            <div class="verilog-explainer-card" id="verilog-explainer-card">
+                                <!-- Populated dynamically by PanelManager -->
                             </div>
                         </div>
                         <pre class="verilog-code"><code id="verilog-code-display">// Add components and wire connections to generate synthesizable Verilog</code></pre>

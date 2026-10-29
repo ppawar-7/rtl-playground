@@ -1,27 +1,28 @@
 # RTL Playground — Development Progress
 
-## Current Status: Phase 5 Complete — 37 Tests Passing, Real Yosys HDL Verification, 8 Guided Lessons, 9 Presets, RTL Reference Guide & RTL-to-STA Bridge Specification
+## Current Status: Phase 6 Complete — 43 Tests Passing, 11 Yosys Benchmarks Verified, 12 Guided Lessons, 16 Presets, Interactive Verilog Explanations & Register Features
 
-Last Updated: 2026-10-29 00:22 EDT
+Last Updated: 2026-10-29 00:44 EDT
 
 ---
 
 ## Engineering Audit & Verification Summary
-- **Automated Tests**: **37 Passed, 0 Failed** (`node tests/tests.js`).
-- **Real Verilog HDL Verification**: **6 Passed, 0 Failed** via WebAssembly Yosys Open SYnthesis Suite (`node tests/verilog_verification/run_yosys_verification.js`):
-  - Modules compiled: `gates.v`, `half_adder.v`, `mux2.v`, `dff.v`, `shift_reg.v`, `multi_dff.v`.
+- **Automated Tests**: **43 Passed, 0 Failed** (`node tests/tests.js`).
+- **Real Verilog HDL Verification**: **11 Passed, 0 Failed** via WebAssembly Yosys Open SYnthesis Suite (`node tests/verilog_verification/run_yosys_verification.js`):
+  - Modules compiled: `gates.v`, `half_adder.v`, `mux2.v`, `dff.v`, `shift_reg.v`, `multi_dff.v`, `full_adder.v`, `dffe.v`, `dffsr.v`, `dffesr.v`, `mux_case.v`.
   - Verilog frontend parsed AST representation with 0 errors.
   - Hierarchy elaboration (`hierarchy -check`) verified clean module top levels.
   - Process conversion (`proc`) synthesized registers and multiplexers.
   - Design check (`check -assert`) reported 0 design rule violations.
 - **Browser Automation Audit**: Verified in headless Microsoft Edge via Chrome DevTools Protocol (`node tests/browser_smoke_test.js`):
   - Zero uncaught page exceptions.
-  - All 9 presets load and evaluate properly.
-  - All 8 guided lessons validated behaviorally.
+  - All 16 presets load and evaluate properly.
+  - All 12 guided lessons validated behaviorally (both starter rejection and solution pass).
+  - Interactive Verilog Explainer bar with 6 construct chips tested.
+  - Procedural vs Continuous style toggle (`always @(*)`, `case`) tested.
+  - DFFE, DFFSR, and DFFESR interactive canvas stepping and state retention verified.
   - Real manual circuit construction (palette placement, pin-to-pin wiring, input toggle, selection & deletion) fully tested.
-  - Generated Verilog syntax and truth table generation verified.
   - Waveform canvas stepping and auto-run verified.
-  - Synchronized Verilog code highlighting and inspector RTL hardware mapping verified.
   - Browser audit screenshot saved at `tests/audit_screenshot.png`.
 - **RTL-to-STA Architectural Bridge**: Complete specification authored at `docs/RTL_TO_STA_BRIDGE_DESIGN.md`.
 
@@ -71,6 +72,44 @@ Last Updated: 2026-10-29 00:22 EDT
 - [x] 3 new circuit presets (`reg-enable`, `reg-sync-reset`, `shift-reg-2stage`) bringing total to 9 presets
 - [x] Enhanced browser automation with manual palette-to-canvas placement, pin wiring, signal toggle, inspector verification, and component deletion
 - [x] `docs/RTL_TO_STA_BRIDGE_DESIGN.md` — Complete architectural proposal for integration with STA Playground
+
+### Phase 6: Interactive RTL Coding Fundamentals
+- [x] **Interactive Verilog Explainer**:
+  - Interactive construct explainer bar embedded in Generated Verilog drawer with 6 construct chips:
+    - Continuous assignments (`assign`)
+    - Combinational `always @(*)`
+    - Conditional logic (`if/else`)
+    - Multiplexer selection using `case`
+    - Positive-edge-triggered `always @(posedge clk)`
+    - Blocking versus nonblocking assignments (`=` vs `<=`)
+  - Component selection automatically updates the active construct card with synthesizable Verilog pattern, synthesis target, and timing semantics.
+  - Dual RTL coding perspectives: Continuous (dataflow) vs Procedural (`always @(*)`, `case`) style switcher.
+- [x] **Register With Enable**:
+  - Added first-class `DFFE` component with `['D', 'CLK', 'EN']` pins to graph model, sequential engine, palette, and SVG editor.
+  - Clocked posedge evaluation: loads D when EN=1, retains state across clock edges when EN=0.
+  - Nonblocking synthesizable Verilog generation (`if (en) begin q <= d; end`).
+  - Unit and integration tests for clock edge handling, retention, and Verilog generation.
+- [x] **Synchronous Reset with Documented Priority**:
+  - Added `DFFSR` (Synchronous Reset) and `DFFESR` (Enable + Synchronous Reset) components.
+  - Reset executes strictly on the $0 \to 1$ rising clock edge (immune on falling edges and static intervals).
+  - Explicitly documented priority: Synchronous Reset strictly overrides Enable (`if (rst) q <= 1'b0; else if (en) q <= d;`).
+- [x] **Expanded RTL Presets (16 total)**:
+  - Added `full-adder`: 1-Bit Full Adder with SUM and COUT.
+  - Added `mux-cond`: 2:1 MUX using continuous ternary conditional (`assign y = sel ? b : a`).
+  - Added `mux-case`: 2:1 MUX using procedural `case` statement.
+  - Added `dff-enable`: DFFE with clock enable.
+  - Added `dff-sync-reset`: DFFSR with synchronous reset.
+  - Added `dff-esr-priority`: DFFESR demonstrating Reset priority over Enable.
+  - Added `blocking-vs-nonblocking`: 2-stage shift register demonstrating nonblocking assignment concurrency.
+- [x] **Expanded Guided Lessons (12 total)**:
+  - Added Lesson 9: 1-Bit Full Adder & Carry Propagation ($2^3 = 8$ truth table validation).
+  - Added Lesson 10: DFFE: Register with Clock Enable (load and retention validation).
+  - Added Lesson 11: Synchronous Reset with Documented Priority (priority conflict validation).
+  - Added Lesson 12: Blocking vs Nonblocking Pipeline Semantics (cycle-by-cycle pulse tracing).
+- [x] **Verification & Tests (43 Automated Tests, 11 Yosys Modules)**:
+  - Unit tests expanded from 37 to 43 passed (`node tests/tests.js`).
+  - Yosys real HDL compilation expanded from 6 to 11 passed (`node tests/verilog_verification/run_yosys_verification.js`).
+  - In-browser Edge CDP automated smoke tests verified with 0 uncaught exceptions.
 
 ---
 

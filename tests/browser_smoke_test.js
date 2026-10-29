@@ -15,11 +15,46 @@
  */
 
 import { spawn } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { join, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const ROOT_DIR = join(__dirname, '..');
+
+const MIME_TYPES = {
+    '.html': 'text/html',
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png'
+};
+
+function startStaticServer(port = 8088) {
+    return new Promise((resolve) => {
+        const server = createServer((req, res) => {
+            const urlPath = req.url.split('?')[0];
+            let filePath = join(ROOT_DIR, urlPath === '/' ? 'index.html' : urlPath);
+            if (!existsSync(filePath)) {
+                res.writeHead(404);
+                res.end('Not found');
+                return;
+            }
+            const ext = extname(filePath);
+            const mime = MIME_TYPES[ext] || 'application/octet-stream';
+            res.writeHead(200, { 'Content-Type': mime, 'Access-Control-Allow-Origin': '*' });
+            res.end(readFileSync(filePath));
+        });
+        server.listen(port, () => resolve(server));
+    });
+}
 
 const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const PORT = 9222;
-const BASE_URL = "http://localhost:8080";
+const HTTP_PORT = 8088;
+const BASE_URL = `http://localhost:${HTTP_PORT}`;
 
 class SimpleCDP {
     constructor(wsUrl) {
@@ -89,8 +124,12 @@ async function sleep(ms) {
 async function runBrowserAudit() {
     console.log("=== RTL Playground Browser Engineering Audit ===");
 
+    // Start isolated local HTTP server on port 8088
+    const staticServer = await startStaticServer(HTTP_PORT);
+    console.log(`Local test static server running on ${BASE_URL}`);
+
     // 1. Launch Edge in headless mode with remote debugging
-    console.log("[1/5] Launching headless Microsoft Edge on CDP port 9222...");
+    console.log("[1/6] Launching headless Microsoft Edge on CDP port 9222...");
     const edgeProcess = spawn(EDGE_PATH, [
         '--headless=new',
         `--remote-debugging-port=${PORT}`,
@@ -171,8 +210,13 @@ async function runBrowserAudit() {
     console.log("  Initial Half-Adder Preset Loaded:", initialSummary);
 
     // Test 1: Load all presets sequentially
-    console.log("[4/6] Testing All 9 Presets, Input Toggling, Verilog & Truth Tables...");
-    const presets = ['and-gate', 'or-gate', 'not-gate', 'half-adder', 'mux-2to1', 'dff-demo', 'reg-enable', 'reg-sync-reset', 'shift-reg-2stage'];
+    console.log("[4/7] Testing All 16 Presets, Input Toggling, Verilog & Truth Tables...");
+    const presets = [
+        'and-gate', 'or-gate', 'not-gate', 'half-adder', 'full-adder',
+        'mux-2to1', 'mux-cond', 'mux-case', 'dff-demo',
+        'dff-enable', 'dff-sync-reset', 'dff-esr-priority',
+        'reg-enable', 'reg-sync-reset', 'shift-reg-2stage', 'blocking-vs-nonblocking'
+    ];
     for (const p of presets) {
         await cdp.evaluate(`window.app.loadPreset('${p}')`);
         const pSummary = await cdp.evaluate(`
@@ -186,6 +230,26 @@ async function runBrowserAudit() {
         `);
         console.log(`    Preset '${p}': ${pSummary.comps} components, ${pSummary.conns} wires, Valid: ${pSummary.valid}, Verilog OK: ${pSummary.verilogOk}`);
     }
+
+    // Test 1b: Interactive Verilog Explainer & RTL Construct Switching
+    console.log("  Testing Interactive Verilog Explainer Bar & RTL Constructs...");
+    await cdp.evaluate(`
+        document.querySelector('.drawer-tab-btn[data-tab="verilog"]').click();
+        const chipCase = document.querySelector('.explainer-chip[data-construct="case"]');
+        if (chipCase) chipCase.click();
+    `);
+    await sleep(200);
+    const explainerText = await cdp.evaluate(`document.getElementById('verilog-explainer-card').textContent`);
+    console.log(`    Explainer card rendered: "${explainerText.substring(0, 50)}..."`);
+
+    // Test procedural style toggle
+    console.log("  Testing Procedural Style Toggle...");
+    await cdp.evaluate(`document.getElementById('btn-style-procedural').click()`);
+    await sleep(200);
+    const procCode = await cdp.evaluate(`document.getElementById('verilog-code-display').textContent`);
+    const hasAlways = procCode.includes('always @(*)');
+    console.log(`    Procedural Verilog contains always @(*): ${hasAlways}`);
+    await cdp.evaluate(`document.getElementById('btn-style-continuous').click()`);
 
     // Test 2: Input Toggling on Canvas
     console.log("  Testing live input toggle interaction...");
@@ -228,7 +292,7 @@ async function runBrowserAudit() {
     console.log(`    Waveform Stepping: Clk ${clkInitial} -> ${clkAfterStep1} (rising) -> ${clkAfterStep2} (falling), History count: ${wfHistoryLength}`);
 
     // Test 5: Guided Lessons Validation
-    console.log("[5/6] Testing All 8 Guided Lessons & Validation...");
+    console.log("[5/7] Testing All 12 Guided Lessons & Validation...");
     await cdp.evaluate(`document.querySelector('.sidebar-tab-btn[data-tab="lessons"]').click()`);
     await sleep(200);
 
@@ -240,7 +304,11 @@ async function runBrowserAudit() {
         'lesson-5-mux-cond',
         'lesson-6-reg-enable',
         'lesson-7-sync-reset',
-        'lesson-8-clock-timing'
+        'lesson-8-clock-timing',
+        'lesson-9-full-adder',
+        'lesson-10-reg-enable',
+        'lesson-11-sync-reset-priority',
+        'lesson-12-blocking-nonblocking'
     ];
     for (const lId of lessonIds) {
         const lRes = await cdp.evaluate(`
@@ -277,7 +345,7 @@ async function runBrowserAudit() {
                     checkBtn.click();
                     solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
                 } else if ('${lId}' === 'lesson-5-mux-cond') {
-                    window.app.loadPreset('mux-2to1');
+                    window.app.loadPreset('mux-cond');
                     checkBtn.click();
                     solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
                 } else if ('${lId}' === 'lesson-6-reg-enable') {
@@ -290,6 +358,22 @@ async function runBrowserAudit() {
                     solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
                 } else if ('${lId}' === 'lesson-8-clock-timing') {
                     window.app.loadPreset('shift-reg-2stage');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-9-full-adder') {
+                    window.app.loadPreset('full-adder');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-10-reg-enable') {
+                    window.app.loadPreset('dff-enable');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-11-sync-reset-priority') {
+                    window.app.loadPreset('dff-esr-priority');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-12-blocking-nonblocking') {
+                    window.app.loadPreset('blocking-vs-nonblocking');
                     checkBtn.click();
                     solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
                 }
@@ -395,6 +479,7 @@ async function runBrowserAudit() {
 
     cdp.close();
     edgeProcess.kill();
+    staticServer.close();
     console.log("=== Browser Testing Audit Completed Successfully! ===");
 }
 
