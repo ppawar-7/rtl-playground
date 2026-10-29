@@ -2,7 +2,7 @@
 
 ## 1. What is Already Implemented
 
-RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
+RTL Playground has completed the **Phase 6 Autonomous Integration Baseline** on branch `integrate/phase6-stress`:
 - **Core Simulation Engines**:
   - Combinational evaluation with topological sort (`src/engine/logic_simulator.js`).
   - Graph model with cycle detection, pin tracking, multi-driver rejection, serialization, and clock validation (`src/engine/circuit_graph.js`).
@@ -17,46 +17,26 @@ RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
     - `DFFESR`: explicit documented priority where Reset overrides Enable: `rst == 1 ? 0 : en == 1 ? d : q`.
     - Waveform viewer integration capturing clock, enable, reset, data, and output history.
   - Synthesizable Verilog HDL Generator (`src/engine/verilog_generator.js`):
-    - Generates continuous assignment Verilog (`assign`) for all combinational nets.
-    - Generates procedural Verilog (`generateProcedural`) featuring `always @(*)` and `case (sel)` blocks.
-    - Generates clean, synthesizable clocked `always @(posedge clk)` processes with nonblocking assignments (`<=`) for `DFF`, `DFFE`, `DFFSR`, and `DFFESR`.
-- **Real Verilog HDL Verification Pipeline**:
-  - Automated Verilog generator and self-checking testbench generator (`tests/verilog_verification/generate_verification_suites.js`) covering 11 modules:
-    - Combinational: `gates.v`, `half_adder.v`, `full_adder.v`, `mux2.v`, `mux_case.v`
-    - Sequential: `dff.v`, `dffe.v`, `dffsr.v`, `dffesr.v`, `shift_reg.v`, `multi_dff.v`
-  - Self-contained WebAssembly Yosys verification runner (`tests/verilog_verification/run_yosys_verification.js`) using `@yowasp/yosys` compiling AST, elaborating hierarchy, running process optimization, and asserting correctness (`check -assert`) with 0 errors.
+    - Continuous dataflow assignment style (`assign`) for combinational nets.
+    - Procedural behavioral style (`generateProcedural`) featuring `always @(*)` and `case (sel)` blocks.
+    - Clean clocked `always @(posedge clk)` processes with nonblocking assignments (`<=`) for `DFF`, `DFFE`, `DFFSR`, and `DFFESR`.
+- **Dual WebAssembly HDL Verification Pipelines**:
+  - **Yosys Synthesis Check** (`tests/verilog_verification/run_yosys_verification.js`):
+    - 11 modules (`gates`, `half_adder`, `full_adder`, `mux2`, `mux_case`, `dff`, `dffe`, `dffsr`, `dffesr`, `shift_reg`, `multi_dff`) verified for AST parsing, hierarchy elaboration, process mapping, and design rules (`check -assert`).
+  - **Icarus Verilog Simulation** (`tests/verilog_verification/run_iverilog_simulation.js`):
+    - All 11 benchmark testbenches executed with IEEE 1364 event-driven simulation via `@veriflow/iverilog-wasm` (`ivlpp`, `ivl`, `vvp`).
+  - **Cross-Engine Differential Simulation** (`tests/verilog_verification/run_differential_simulation.js`):
+    - 34 cycle-by-cycle assertions proving bit-for-bit equivalence between JavaScript simulation and compiled Verilog simulation with 0 mismatches.
+- **Automated Stress Testing Infrastructure (`tests/stress/`)**:
+  - Deterministic PRNG circuit generation, multi-gate DAG scaling, memory profiling, and failure reproduction.
+  - Port-isolated browser worker (`STRESS_HTTP_PORT`, `STRESS_CDP_PORT`).
 - **Interactive RTL Educational Features**:
-  - **Verilog Explainer Bar & Interactive Cards**:
-    - 6 validated educational RTL constructs:
-      1. Continuous assignments (`assign`)
-      2. Combinational `always @(*)`
-      3. Conditional logic (`if/else`)
-      4. Multiplexer selection using `case`
-      5. Positive-edge-triggered `always @(posedge clk)`
-      6. Blocking (`=`) vs nonblocking (`<=`) assignments
-    - Real-time synchronization: clicking or selecting any component on the canvas automatically activates the corresponding explainer construct card and highlights the exact Verilog lines in the generated code panel.
-    - Dual Verilog View switcher: toggle between continuous assignment style (`assign`) and procedural style (`always @(*)` / `case`).
-  - **RTL Hardware Mapping Inspector**:
-    - Displays synthesizable construct, Verilog template, physical standard cell library mapping (e.g. `AND2X1`, `MUX2X1`, `DFFX1`, `DFFEX1`, `DFFSRX1`, `DFFESRX1`), and timing model.
-  - **12 Guided Lessons (`src/modules/lessons.js`)**:
-    - Lesson 1: Logic Gates Basics
-    - Lesson 2: Half Adder Implementation
-    - Lesson 3: 2:1 Multiplexer
-    - Lesson 4: Sequential D Flip-Flop
-    - Lesson 5: Conditional Selection (MUX)
-    - Lesson 6: Register with Clock Enable
-    - Lesson 7: Register with Synchronous Reset
-    - Lesson 8: Clock Edge Timing & Pipelines
-    - Lesson 9: Full Adder Construction
-    - Lesson 10: Clock Enable & Retention (DFFE)
-    - Lesson 11: Synchronous Reset Priority (DFFESR)
-    - Lesson 12: Blocking vs Nonblocking Pipeline Semantics
-  - **16 Educational Presets (`src/modules/presets.js`)**:
-    - Basic Gates (AND, OR, NOT)
-    - Arithmetic (Half Adder, Full Adder)
-    - Multiplexers (2:1 MUX Conditional `? :`, 2:1 MUX Procedural `case`)
-    - Sequential Registers (DFF Demo, DFF with Enable `DFFE`, DFF with Synchronous Reset `DFFSR`, DFF with Enable & Reset `DFFESR`)
-    - Advanced Architectural Demos (2-Stage Shift Register Pipeline, Blocking vs Nonblocking Pipeline Comparison)
+  - Verilog Explainer bar with 6 concept cards (`assign`, `always @(*)`, `if/else`, `case`, `always @(posedge clk)`, `= vs <=`).
+  - Component-to-code synchronized highlighting.
+  - Dual Coding Perspective switcher.
+  - RTL Hardware Mapping inspector card with standard cell mappings.
+  - 12 Guided Lessons (`src/modules/lessons.js`) with behavioral validation.
+  - 16 Educational Presets (`src/modules/presets.js`).
 - **Architectural Bridge Specification**:
   - Complete architectural design specification for integration with STA Playground (`docs/RTL_TO_STA_BRIDGE_DESIGN.md`).
 
@@ -65,20 +45,29 @@ RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
 ## 2. What Has Actually Been Tested
 
 1. **Host-Environment Unit & Integration Tests**:
-   - `node tests/tests.js`: **43 test cases** covering truth tables, multi-gate cascades, fan-out, DFF nonblocking edge updates, clock filtering, cycle detection, multi-level logic trees, Verilog continuous & procedural generation, serialization, `DFFE` enable retention/load, `DFFSR` synchronous reset timing, `DFFESR` reset priority over enable, all 16 presets, and all 12 lessons.
+   - `node tests/tests.js`: **49 test cases** covering gate truth tables, fan-out, DFF nonblocking edge updates, clock filtering, cycle detection, multi-level logic trees, Verilog generation, serialization, `DFFE` enable retention/load, `DFFSR` synchronous reset timing, `DFFESR` reset priority over enable, heterogeneous 4-stage pipeline, all 16 presets, and all 12 lessons.
 2. **Real Verilog HDL Compilation via Yosys**:
-   - `node tests/verilog_verification/run_yosys_verification.js`: all 11 modules (`gates.v`, `half_adder.v`, `full_adder.v`, `mux2.v`, `mux_case.v`, `dff.v`, `dffe.v`, `dffsr.v`, `dffesr.v`, `shift_reg.v`, `multi_dff.v`) compiled to AST, elaborated, checked (`check -assert`), and synthesized with 0 errors.
-3. **Automated Real Browser CDP Testing in Microsoft Edge**:
-   - `node tests/browser_smoke_test.js`: launches headless Microsoft Edge, validates in-browser test runner (`test_runner.html`, 43 passed), loads main app (`index.html`), tests all 16 presets, live input toggling, truth table generation, waveform viewer clock stepping, explainer construct chips, procedural Verilog toggle, all 12 lessons (both starter failure and correct solution), and manual circuit construction (palette click, canvas placement, pin wiring, live toggle, inspector selection, and deletion). 0 uncaught page exceptions.
+   - `node tests/verilog_verification/run_yosys_verification.js`: all 11 modules compiled to AST, elaborated, checked (`check -assert`), and synthesized with 0 errors.
+3. **Event-Driven Icarus Verilog Simulation**:
+   - `node tests/verilog_verification/run_iverilog_simulation.js`: all 11 testbenches executed with 0 assertion errors.
+4. **Cross-Engine Differential Simulation**:
+   - `node tests/verilog_verification/run_differential_simulation.js`: 34 checks passed with 0 mismatches.
+5. **Automated Real Browser CDP Testing in Microsoft Edge**:
+   - `node tests/browser_smoke_test.js`: launches headless Microsoft Edge, validates in-browser test runner (`test_runner.html`, 49 passed), loads main app (`index.html`), tests all 16 presets, live input toggling, truth table generation, waveform viewer clock stepping, explainer construct chips, procedural Verilog toggle, all 12 lessons (both starter failure and correct solution), and manual circuit construction (palette click, canvas placement, pin wiring, live toggle, inspector selection, and deletion). 0 uncaught page exceptions.
+6. **Stress Testing Smoke Check**:
+   - `node tests/stress/stress_runner.js`: 445 batches executed, 1,557 circuits generated, 4,573 simulations, 8,900 sequential steps, 222 Yosys compilations, 0 failures.
 
 ---
 
 ## 3. Which Tests Pass or Fail
 
-- **Automated Tests (`node tests/tests.js`)**: **43 Passed, 0 Failed**.
+- **Automated Tests (`node tests/tests.js`)**: **49 Passed, 0 Failed**.
 - **Real Verilog Yosys Verification (`node tests/verilog_verification/run_yosys_verification.js`)**: **11 Passed, 0 Failed**.
+- **Icarus Verilog Simulation (`node tests/verilog_verification/run_iverilog_simulation.js`)**: **11 Passed, 0 Failed**.
+- **Cross-Engine Differential Simulation (`node tests/verilog_verification/run_differential_simulation.js`)**: **34 Passed, 0 Failed (0 mismatches)**.
 - **Browser Automation Suite (`node tests/browser_smoke_test.js`)**: **All Passed, 0 Uncaught Page Exceptions**.
-- **In-Browser Test Runner (`tests/test_runner.html`)**: **43 Passed, 0 Failed**.
+- **In-Browser Test Runner (`tests/test_runner.html`)**: **49 Passed, 0 Failed**.
+- **Stress Testing Smoke Check (`node tests/stress/stress_runner.js`)**: **445 Batches Passed, 0 Failed**.
 
 ---
 
@@ -95,7 +84,7 @@ RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
 1. **Single-bit signals only**: All canvas nets represent 1-bit wires.
 2. **Combinational feedback loops rejected**: Strict cycle detection prevents asynchronous latches by design (Decision 007).
 3. **Truth table size limit**: Restricted to $\le 4$ independent inputs ($2^4 = 16$ rows) to maintain UI responsiveness.
-4. **External Icarus Verilog setup**: Icarus Verilog is not on system PATH; Yosys WebAssembly handles local AST/synthesis checks. If external `iverilog` binary simulation is required, `winget install Icarus.Verilog` can be executed once user approves.
+4. **Background process preservation**: Background long-duration stress test (PID 22852) is currently testing the Phase 5 baseline on port 8080/8181. Integration tests use port 8088 / 8182 / 9334 to prevent collisions.
 
 ---
 
@@ -110,7 +99,11 @@ RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
 - `src/ui/panels.js`: Panel layout, interactive Verilog explainer cards, RTL hardware mapping inspector, continuous vs procedural style switcher.
 - `src/modules/lessons.js`: 12 guided educational lessons with behavioral validation.
 - `src/modules/presets.js`: 16 educational circuit presets.
-- `docs/DECISIONS.md`: Architectural decision records (ADRs 001–014).
+- `tests/stress/`: Long-duration deterministic stress testing harness.
+- `tests/verilog_verification/`: Real HDL verification scripts for Yosys and Icarus Verilog.
+- `docs/INTEGRATION_REPORT.md`: Comprehensive integration audit report.
+- `docs/RELEASE_CANDIDATE_CHECKLIST.md`: Formal release candidate sign-off checklist.
+- `docs/DECISIONS.md`: Architectural decision records (ADRs 001–016).
 - `docs/PROGRESS.md`: Feature matrix, phase tracker, and test metrics.
 - `docs/HANDOFF.md`: Current handoff documentation.
 
@@ -120,23 +113,31 @@ RTL Playground has completed **Phase 6: Interactive RTL Coding Fundamentals**:
 
 ```bash
 # Navigate to project worktree:
-cd C:\Users\pranil\Documents\PD-Playground\rtl-playground-phase6
+cd C:\Users\pranil\Documents\PD-Playground\rtl-playground-integration
 
-# 1. Run unit tests in Node.js (43 tests):
-node tests/tests.js
+# 1. Run unit & regression tests in Node.js (49 tests):
+npm test
+# or: node tests/tests.js
 
 # 2. Run real Verilog HDL verification via WebAssembly Yosys (11 benchmarks):
-node tests/verilog_verification/run_yosys_verification.js
+npm run test:yosys
+# or: node tests/verilog_verification/run_yosys_verification.js
 
-# 3. Launch local HTTP server (port 8088 to avoid port 8080 collision):
-python -m http.server 8088
+# 3. Run event-driven Verilog simulation via WebAssembly Icarus Verilog (11 benchmarks):
+npm run test:iverilog
+# or: node tests/verilog_verification/run_iverilog_simulation.js
 
-# 4. Run automated browser tests in Microsoft Edge:
-node tests/browser_smoke_test.js
+# 4. Run cross-engine differential simulation (JS Engine vs Compiled Verilog):
+npm run test:differential
+# or: node tests/verilog_verification/run_differential_simulation.js
 
-# 5. Open in any browser:
-# Main Application: http://localhost:8088
-# In-Browser Test Runner: http://localhost:8088/tests/test_runner.html
+# 5. Run automated browser tests in Microsoft Edge (via CDP on port 8088):
+npm run test:browser
+# or: node tests/browser_smoke_test.js
+
+# 6. Run a bounded smoke check of the stress testing harness (30s):
+$env:STRESS_HTTP_PORT = "8182"; $env:STRESS_CDP_PORT = "9334"
+node tests/stress/stress_runner.js --duration=30s --yield-ms=40 --report-dir=tests/stress/reports/integration_smoke
 ```
 
 ---

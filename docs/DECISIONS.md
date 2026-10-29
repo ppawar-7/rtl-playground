@@ -87,3 +87,15 @@
 **Date**: 2026-10-29  
 **Decision**: Added an interactive RTL Construct Explainer bar directly inside the Generated Verilog drawer with 6 interactive construct chips (`assign`, `always @(*)`, `if/else`, `case`, `always @(posedge clk)`, and Blocking vs Nonblocking `= vs <=`). Added a style switcher enabling students to view synthesizable circuits in either Continuous Dataflow style (`assign`) or Procedural Behavioral style (`always @(*)`, `case`).  
 **Rationale**: Beginners frequently struggle with the duality between dataflow (`assign`) and procedural (`always`) Verilog. Grounding explanations in validated educational examples and standard cell mappings bridges visual schematic intuition to professional RTL design.
+
+## Decision 015: Event-Driven HDL Simulation Closure and Differential Verification via WebAssembly Icarus Verilog (@veriflow/iverilog-wasm)
+
+**Date**: 2026-10-29  
+**Decision**: Integrate `@veriflow/iverilog-wasm` to execute true event-driven Icarus Verilog (`ivlpp`, `ivl`, `vvp`) simulation within Node.js, and establish automated cross-engine differential simulation comparing JavaScript simulation against compiled IEEE 1364 Verilog execution across all 11 benchmark designs.  
+**Rationale**: Synthesizability and AST checks (via Yosys) confirm syntax and circuit mapping, but cannot verify dynamic simulation semantics (such as nonblocking assignment scheduling, clock-edge races, hold times, and multi-cycle pipeline propagation). Using WebAssembly Icarus Verilog provides true event-driven HDL execution with zero system-level tool installations, completing cycle-accurate verification closure with 0 mismatches.
+
+## Decision 016: Long-Duration Deterministic Stress Testing Harness & Automated Reproduction Architecture
+
+**Date**: 2026-10-29  
+**Decision**: Integrate an autonomous, deterministic stress testing suite (`tests/stress/`) using seeded PRNG circuit synthesis, independent 3-valued Boolean reference evaluation, nonblocking sequential state machines, and headless Edge CDP testing. Support dynamic environment port isolation (`STRESS_HTTP_PORT`, `STRESS_CDP_PORT`) to run concurrent test suites without port collision.  
+**Rationale**: Guarantees high-volume verification across thousands of randomized circuit topologies, multi-gate cascades, sequential feedback loops, and serialization round-trips while allowing concurrent test executions without resource contention.

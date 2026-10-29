@@ -1387,6 +1387,289 @@ await test('Equivalence: generated Verilog and JavaScript simulation describe id
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  14. CROSS-MODULE REGRESSION & INTEGRATION TESTS
+// ═════════════════════════════════════════════════════════════════════════════
+
+log('\n📋 Cross-Module Regression & Integration Tests');
+
+await test('Heterogeneous 4-stage pipeline (DFF -> DFFE -> DFFSR -> DFFESR) simultaneous clock advancement', () => {
+    const g = new CircuitGraph();
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+
+    const clk = g.addComponent('CLOCK', 50, 200, 'clk');
+    const dIn = g.addComponent('INPUT', 50, 50, 'din');
+    const en1 = g.addComponent('INPUT', 50, 100, 'en1');
+    const rst2 = g.addComponent('INPUT', 50, 150, 'rst2');
+    const en3 = g.addComponent('INPUT', 50, 250, 'en3');
+    const rst3 = g.addComponent('INPUT', 50, 300, 'rst3');
+
+    const ff0 = g.addComponent('DFF', 150, 50, 'ff0');
+    const ff1 = g.addComponent('DFFE', 270, 50, 'ff1');
+    const ff2 = g.addComponent('DFFSR', 390, 50, 'ff2');
+    const ff3 = g.addComponent('DFFESR', 510, 50, 'ff3');
+    const out = g.addComponent('OUTPUT', 630, 50, 'q_final');
+
+    // Clock connections to all 4 registers
+    g.addConnection(clk.id, `${clk.id}.out0`, ff0.id, `${ff0.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, ff1.id, `${ff1.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, ff2.id, `${ff2.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, ff3.id, `${ff3.id}.in1`);
+
+    // Pipeline datapath: din -> ff0 -> ff1 -> ff2 -> ff3 -> out
+    g.addConnection(dIn.id, `${dIn.id}.out0`, ff0.id, `${ff0.id}.in0`);
+    g.addConnection(ff0.id, `${ff0.id}.out0`, ff1.id, `${ff1.id}.in0`);
+    g.addConnection(ff1.id, `${ff1.id}.out0`, ff2.id, `${ff2.id}.in0`);
+    g.addConnection(ff2.id, `${ff2.id}.out0`, ff3.id, `${ff3.id}.in0`);
+    g.addConnection(ff3.id, `${ff3.id}.out0`, out.id, `${out.id}.in0`);
+
+    // Control pins
+    g.addConnection(en1.id, `${en1.id}.out0`, ff1.id, `${ff1.id}.in2`);
+    g.addConnection(rst2.id, `${rst2.id}.out0`, ff2.id, `${ff2.id}.in2`);
+    g.addConnection(en3.id, `${en3.id}.out0`, ff3.id, `${ff3.id}.in2`);
+    g.addConnection(rst3.id, `${rst3.id}.out0`, ff3.id, `${ff3.id}.in3`);
+
+    seq.initializeDFFs();
+    g.setInputValue(dIn.id, 1);
+    g.setInputValue(en1.id, 1);
+    g.setInputValue(rst2.id, 0);
+    g.setInputValue(en3.id, 1);
+    g.setInputValue(rst3.id, 0);
+    sim.evaluate();
+
+    // Pulse 1 into ff0
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(ff0.id).Q, 1, 'ff0 captures 1 on cycle 1');
+    assertEqual(seq.getDFFState(ff1.id).Q, 0, 'ff1 remains 0 on cycle 1');
+
+    // Cycle 2: din=0, en1=0 (ff1 disabled)
+    g.setInputValue(dIn.id, 0);
+    g.setInputValue(en1.id, 0);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(ff0.id).Q, 0, 'ff0 receives 0 on cycle 2');
+    assertEqual(seq.getDFFState(ff1.id).Q, 0, 'ff1 retains 0 on cycle 2 because en1=0');
+
+    // Cycle 3: re-enable en1=1 with ff0=0
+    g.setInputValue(en1.id, 1);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep();
+    assertEqual(seq.getDFFState(ff1.id).Q, 0, 'ff1 updates to 0');
+
+    // Now propagate data=1 through full pipeline
+    g.setInputValue(dIn.id, 1);
+    g.setInputValue(en1.id, 1);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep(); // ff0=1, ff1=0, ff2=0, ff3=0
+    g.setInputValue(dIn.id, 0);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep(); // ff0=0, ff1=1, ff2=0, ff3=0
+    assertEqual(seq.getDFFState(ff1.id).Q, 1, 'ff1 has data=1');
+    seq.clockStep(); seq.clockStep(); // ff0=0, ff1=0, ff2=1, ff3=0
+    assertEqual(seq.getDFFState(ff2.id).Q, 1, 'ff2 has data=1');
+
+    // Assert reset priority on ff3 when both rst3=1 and en3=1
+    g.setInputValue(rst3.id, 1);
+    g.setInputValue(en3.id, 1);
+    sim.evaluate();
+    seq.clockStep(); seq.clockStep(); // ff3 should receive reset=0 despite en3=1 and ff2.Q=1
+    assertEqual(seq.getDFFState(ff3.id).Q, 0, 'ff3 reset strictly overrides enable on posedge');
+    const outComp = g.getComponent(out.id);
+    assertEqual(outComp.inputs[0].value, 0, 'Pipeline output is 0');
+});
+
+await test('Phase 6 full sequential serialization round-trip', () => {
+    const g = new CircuitGraph();
+    const clk = g.addComponent('CLOCK', 50, 200, 'clk');
+    const din = g.addComponent('INPUT', 50, 50, 'din');
+    const en = g.addComponent('INPUT', 50, 100, 'en');
+    const rst = g.addComponent('INPUT', 50, 150, 'rst');
+    const dffe = g.addComponent('DFFE', 200, 50, 'my_dffe');
+    const dffsr = g.addComponent('DFFSR', 200, 150, 'my_dffsr');
+    const dffesr = g.addComponent('DFFESR', 200, 250, 'my_dffesr');
+    const out0 = g.addComponent('OUTPUT', 400, 50, 'q_en');
+    const out1 = g.addComponent('OUTPUT', 400, 150, 'q_sr');
+    const out2 = g.addComponent('OUTPUT', 400, 250, 'q_esr');
+
+    g.addConnection(clk.id, `${clk.id}.out0`, dffe.id, `${dffe.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffsr.id, `${dffsr.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffesr.id, `${dffesr.id}.in1`);
+
+    g.addConnection(din.id, `${din.id}.out0`, dffe.id, `${dffe.id}.in0`);
+    g.addConnection(en.id, `${en.id}.out0`, dffe.id, `${dffe.id}.in2`);
+    g.addConnection(dffe.id, `${dffe.id}.out0`, out0.id, `${out0.id}.in0`);
+
+    g.addConnection(din.id, `${din.id}.out0`, dffsr.id, `${dffsr.id}.in0`);
+    g.addConnection(rst.id, `${rst.id}.out0`, dffsr.id, `${dffsr.id}.in2`);
+    g.addConnection(dffsr.id, `${dffsr.id}.out0`, out1.id, `${out1.id}.in0`);
+
+    g.addConnection(din.id, `${din.id}.out0`, dffesr.id, `${dffesr.id}.in0`);
+    g.addConnection(en.id, `${en.id}.out0`, dffesr.id, `${dffesr.id}.in2`);
+    g.addConnection(rst.id, `${rst.id}.out0`, dffesr.id, `${dffesr.id}.in3`);
+    g.addConnection(dffesr.id, `${dffesr.id}.out0`, out2.id, `${out2.id}.in0`);
+
+    const json = g.serialize();
+    const g2 = new CircuitGraph();
+    const desOk = g2.deserialize(json);
+    assert(desOk, 'Deserialization must succeed');
+
+    assertEqual(g2.components.size, g.components.size, 'Component count must match');
+    assertEqual(g2.connections.size, g.connections.size, 'Connection count must match');
+
+    const types2 = Array.from(g2.components.values()).map(c => c.type);
+    assert(types2.includes('DFFE'), 'Deserialized graph must contain DFFE');
+    assert(types2.includes('DFFSR'), 'Deserialized graph must contain DFFSR');
+    assert(types2.includes('DFFESR'), 'Deserialized graph must contain DFFESR');
+});
+
+await test('Dual-perspective Verilog generation for heterogeneous sequential circuits', () => {
+    const g = new CircuitGraph();
+    const clk = g.addComponent('CLOCK', 50, 150, 'clk');
+    const din = g.addComponent('INPUT', 50, 50, 'din');
+    const en = g.addComponent('INPUT', 50, 100, 'en');
+    const rst = g.addComponent('INPUT', 50, 200, 'rst');
+    const dffe = g.addComponent('DFFE', 200, 50, 'reg_e');
+    const dffsr = g.addComponent('DFFSR', 200, 150, 'reg_s');
+    const outE = g.addComponent('OUTPUT', 400, 50, 'q_e');
+    const outS = g.addComponent('OUTPUT', 400, 150, 'q_s');
+
+    g.addConnection(clk.id, `${clk.id}.out0`, dffe.id, `${dffe.id}.in1`);
+    g.addConnection(clk.id, `${clk.id}.out0`, dffsr.id, `${dffsr.id}.in1`);
+    g.addConnection(din.id, `${din.id}.out0`, dffe.id, `${dffe.id}.in0`);
+    g.addConnection(en.id, `${en.id}.out0`, dffe.id, `${dffe.id}.in2`);
+    g.addConnection(dffe.id, `${dffe.id}.out0`, outE.id, `${outE.id}.in0`);
+
+    g.addConnection(din.id, `${din.id}.out0`, dffsr.id, `${dffsr.id}.in0`);
+    g.addConnection(rst.id, `${rst.id}.out0`, dffsr.id, `${dffsr.id}.in2`);
+    g.addConnection(dffsr.id, `${dffsr.id}.out0`, outS.id, `${outS.id}.in0`);
+
+    const vgen = new VerilogGenerator(g);
+
+    // Continuous style
+    const contRes = vgen.generate('het_cont');
+    assert(contRes.ok, 'Continuous generation must succeed');
+    assert(contRes.code.includes('always @(posedge clk)'), 'Must contain clocked always block');
+    assert(contRes.code.includes('if (en)'), 'Must contain enable condition');
+    assert(contRes.code.includes('if (rst)'), 'Must contain reset condition');
+
+    // Procedural style
+    const procRes = vgen.generateProcedural('het_proc');
+    assert(procRes.ok, 'Procedural generation must succeed');
+    assert(procRes.code.includes('always @(posedge clk)'), 'Procedural must contain clocked always block');
+    assert(procRes.code.includes('reg reg_e_q;'), 'Procedural must declare reg for DFFE');
+    assert(procRes.code.includes('reg reg_s_q;'), 'Procedural must declare reg for DFFSR');
+});
+
+await test('Waveform snapshot logging across all register controls (EN, RST, CLK, D, Q)', () => {
+    const g = new CircuitGraph();
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+
+    const clk = g.addComponent('CLOCK', 50, 150, 'clk');
+    const din = g.addComponent('INPUT', 50, 50, 'din');
+    const en = g.addComponent('INPUT', 50, 100, 'en');
+    const rst = g.addComponent('INPUT', 50, 200, 'rst');
+    const esr = g.addComponent('DFFESR', 200, 100, 'reg_esr');
+    const out = g.addComponent('OUTPUT', 400, 100, 'q_out');
+
+    g.addConnection(clk.id, `${clk.id}.out0`, esr.id, `${esr.id}.in1`);
+    g.addConnection(din.id, `${din.id}.out0`, esr.id, `${esr.id}.in0`);
+    g.addConnection(en.id, `${en.id}.out0`, esr.id, `${esr.id}.in2`);
+    g.addConnection(rst.id, `${rst.id}.out0`, esr.id, `${esr.id}.in3`);
+    g.addConnection(esr.id, `${esr.id}.out0`, out.id, `${out.id}.in0`);
+
+    seq.initializeDFFs();
+    g.setInputValue(din.id, 1);
+    g.setInputValue(en.id, 1);
+    g.setInputValue(rst.id, 0);
+    sim.evaluate();
+
+    seq.clockStep(); // 0 -> 1
+    seq.clockStep(); // 1 -> 0
+
+    const history = seq.getWaveformHistory();
+    assert(history.length >= 2, 'History must contain at least 2 snapshots');
+    const latest = history[history.length - 1];
+    assert(latest.signals[esr.id] !== undefined, 'Snapshot must contain DFFESR signal');
+    assertEqual(latest.signals[esr.id].EN, 1, 'Waveform tracks EN value');
+    assertEqual(latest.signals[esr.id].RST, 0, 'Waveform tracks RST value');
+    assertEqual(latest.signals[esr.id].Q, 1, 'Waveform tracks Q value');
+});
+
+await test('Cycle detection immunity for sequential feedback loops with DFFE, DFFSR, and DFFESR', () => {
+    const g = new CircuitGraph();
+    const clk = g.addComponent('CLOCK', 50, 150, 'clk');
+    const dffe = g.addComponent('DFFE', 200, 50, 'loop_dffe');
+    const notGate = g.addComponent('NOT', 320, 50, 'inv');
+
+    // DFFE.Q -> NOT -> DFFE.D (sequential feedback loop)
+    g.addConnection(clk.id, `${clk.id}.out0`, dffe.id, `${dffe.id}.in1`);
+    g.addConnection(dffe.id, `${dffe.id}.out0`, notGate.id, `${notGate.id}.in0`);
+    g.addConnection(notGate.id, `${notGate.id}.out0`, dffe.id, `${dffe.id}.in0`);
+
+    let check = g.detectCycles();
+    assert(!check.hasCycle, 'DFFE sequential feedback loop must not be flagged as cycle');
+
+    // Add combinational cycle: NOT1 -> NOT2 -> NOT1
+    const n1 = g.addComponent('NOT', 100, 250);
+    const n2 = g.addComponent('NOT', 200, 250);
+    g.addConnection(n1.id, `${n1.id}.out0`, n2.id, `${n2.id}.in0`);
+    g.addConnection(n2.id, `${n2.id}.out0`, n1.id, `${n1.id}.in0`);
+
+    check = g.detectCycles();
+    assert(check.hasCycle, 'Combinational feedback cycle must still be detected');
+});
+
+await test('Clock sensitivity and falling-edge immunity across all register types', () => {
+    const g = new CircuitGraph();
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+
+    const clk = g.addComponent('CLOCK', 50, 150, 'clk');
+    const din = g.addComponent('INPUT', 50, 50, 'din');
+    const en = g.addComponent('INPUT', 50, 100, 'en');
+    const rst = g.addComponent('INPUT', 50, 200, 'rst');
+    const dff = g.addComponent('DFF', 200, 50, 'f_dff');
+    const dffe = g.addComponent('DFFE', 200, 100, 'f_dffe');
+    const dffsr = g.addComponent('DFFSR', 200, 150, 'f_dffsr');
+    const dffesr = g.addComponent('DFFESR', 200, 200, 'f_dffesr');
+
+    for (const r of [dff, dffe, dffsr, dffesr]) {
+        g.addConnection(clk.id, `${clk.id}.out0`, r.id, `${r.id}.in1`);
+        g.addConnection(din.id, `${din.id}.out0`, r.id, `${r.id}.in0`);
+    }
+    g.addConnection(en.id, `${en.id}.out0`, dffe.id, `${dffe.id}.in2`);
+    g.addConnection(rst.id, `${rst.id}.out0`, dffsr.id, `${dffsr.id}.in2`);
+    g.addConnection(en.id, `${en.id}.out0`, dffesr.id, `${dffesr.id}.in2`);
+    g.addConnection(rst.id, `${rst.id}.out0`, dffesr.id, `${dffesr.id}.in3`);
+
+    seq.initializeDFFs();
+    g.setInputValue(din.id, 1);
+    g.setInputValue(en.id, 1);
+    g.setInputValue(rst.id, 0);
+    sim.evaluate();
+
+    // Rising edge: all load 1
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dff.id).Q, 1, 'DFF loaded on rising edge');
+    assertEqual(seq.getDFFState(dffe.id).Q, 1, 'DFFE loaded on rising edge');
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'DFFSR loaded on rising edge');
+    assertEqual(seq.getDFFState(dffesr.id).Q, 1, 'DFFESR loaded on rising edge');
+
+    // While clock is high or falling, assert reset and change din to 0
+    g.setInputValue(din.id, 0);
+    g.setInputValue(rst.id, 1);
+    sim.evaluate();
+
+    // Falling edge: 1 -> 0
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dff.id).Q, 1, 'DFF holds state on falling edge');
+    assertEqual(seq.getDFFState(dffe.id).Q, 1, 'DFFE holds state on falling edge');
+    assertEqual(seq.getDFFState(dffsr.id).Q, 1, 'DFFSR holds state on falling edge (reset ignored without rising edge)');
+    assertEqual(seq.getDFFState(dffesr.id).Q, 1, 'DFFESR holds state on falling edge');
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  SUMMARY
 // ═════════════════════════════════════════════════════════════════════════════
 

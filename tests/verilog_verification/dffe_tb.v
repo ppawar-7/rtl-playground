@@ -15,7 +15,7 @@ module dffe_tb;
     always #5 clk = ~clk;
 
     initial begin
-        clk = 0; d = 0; en = 0;
+        clk = 0; d = 0; en = 1;
         #12;
         d = 1; en = 0; #10;
         if (q !== 0) errors = errors + 1;

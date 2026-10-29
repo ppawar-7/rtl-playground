@@ -15,8 +15,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
-const CDP_PORT = 9333;
-const HTTP_PORT = 8181;
+const CDP_PORT = parseInt(process.env.STRESS_CDP_PORT || '9333', 10);
+const HTTP_PORT = parseInt(process.env.STRESS_HTTP_PORT || '8181', 10);
 
 // Minimal static file server for testing
 let _server = null;

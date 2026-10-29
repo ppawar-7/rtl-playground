@@ -1,20 +1,26 @@
 # RTL Playground — Development Progress
 
-## Current Status: Phase 6 Complete — 43 Tests Passing, 11 Yosys Benchmarks Verified, 12 Guided Lessons, 16 Presets, Interactive Verilog Explanations & Register Features
+## Current Status: Phase 6 Integrated Release Candidate Baseline (`integrate/phase6-stress`) — 49 Unit Tests, 11 Yosys Modules, 11 Icarus Verilog Simulations, 34 Differential Checks, 16 Presets, 12 Lessons, and Stress Testing Infrastructure
 
-Last Updated: 2026-10-29 00:44 EDT
+Last Updated: 2026-10-29 01:00 EDT
 
 ---
 
 ## Engineering Audit & Verification Summary
-- **Automated Tests**: **43 Passed, 0 Failed** (`node tests/tests.js`).
-- **Real Verilog HDL Verification**: **11 Passed, 0 Failed** via WebAssembly Yosys Open SYnthesis Suite (`node tests/verilog_verification/run_yosys_verification.js`):
-  - Modules compiled: `gates.v`, `half_adder.v`, `mux2.v`, `dff.v`, `shift_reg.v`, `multi_dff.v`, `full_adder.v`, `dffe.v`, `dffsr.v`, `dffesr.v`, `mux_case.v`.
+- **Automated Tests**: **49 Passed, 0 Failed** (`node tests/tests.js`).
+- **Real Verilog HDL Verification (Yosys Open SYnthesis Suite)**: **11 Passed, 0 Failed** (`node tests/verilog_verification/run_yosys_verification.js`):
+  - Modules compiled: `gates.v`, `half_adder.v`, `full_adder.v`, `mux2.v`, `mux_case.v`, `dff.v`, `dffe.v`, `dffsr.v`, `dffesr.v`, `shift_reg.v`, `multi_dff.v`.
   - Verilog frontend parsed AST representation with 0 errors.
   - Hierarchy elaboration (`hierarchy -check`) verified clean module top levels.
   - Process conversion (`proc`) synthesized registers and multiplexers.
   - Design check (`check -assert`) reported 0 design rule violations.
+- **Event-Driven Icarus Verilog Simulation**: **11 Passed, 0 Failed** (`node tests/verilog_verification/run_iverilog_simulation.js`):
+  - All 11 benchmark testbenches executed with IEEE 1364 event-driven simulation via `@veriflow/iverilog-wasm` (`ivlpp`, `ivl`, `vvp`).
+  - Behavioral assertions confirmed cycle-accurate edge triggering, enable retention, and reset priority.
+- **Cross-Engine Differential Simulation**: **34 Passed, 0 Failed (0 mismatches)** (`node tests/verilog_verification/run_differential_simulation.js`):
+  - Cycle-by-cycle equivalence testing across 9 benchmark circuits comparing JavaScript simulation vs compiled Verilog execution.
 - **Browser Automation Audit**: Verified in headless Microsoft Edge via Chrome DevTools Protocol (`node tests/browser_smoke_test.js`):
+  - In-browser test runner (`tests/test_runner.html`): 49 passed, 0 failed.
   - Zero uncaught page exceptions.
   - All 16 presets load and evaluate properly.
   - All 12 guided lessons validated behaviorally (both starter rejection and solution pass).
@@ -24,6 +30,10 @@ Last Updated: 2026-10-29 00:44 EDT
   - Real manual circuit construction (palette placement, pin-to-pin wiring, input toggle, selection & deletion) fully tested.
   - Waveform canvas stepping and auto-run verified.
   - Browser audit screenshot saved at `tests/audit_screenshot.png`.
+- **Automated Stress Testing Infrastructure**:
+  - Independent, deterministic long-duration testing harness in `tests/stress/`.
+  - Bounded smoke run completed 445 batches (1,557 circuits generated, 4,573 simulations, 8,900 sequential steps, 222 Yosys compilations) with 0 failures and stable heap.
+  - Background 2-hour stress testing process (PID 22852) preserved running undisturbed.
 - **RTL-to-STA Architectural Bridge**: Complete specification authored at `docs/RTL_TO_STA_BRIDGE_DESIGN.md`.
 
 ---
@@ -55,7 +65,7 @@ Last Updated: 2026-10-29 00:44 EDT
 ### Phase 4: Educational Lessons & Validation
 - [x] `src/modules/lessons.js` — Guided lessons (Logic Gates, Half Adder, 2:1 MUX, Sequential DFF) with behavioral truth-table validation and structural checks
 - [x] Lesson UI integration in sidebar (lesson instructions, task details, starter circuit loading, feedback banner)
-- [x] `tests/tests.js` — 32 automated unit & integration tests
+- [x] `tests/tests.js` — Automated unit & integration tests
 - [x] `tests/test_runner.html` — In-browser visual test runner interface
 - [x] `tests/browser_smoke_test.js` — Automated Edge CDP browser testing suite
 - [x] `docs/ENGINEERING_AUDIT.md` — Formal engineering audit report
@@ -73,7 +83,7 @@ Last Updated: 2026-10-29 00:44 EDT
 - [x] Enhanced browser automation with manual palette-to-canvas placement, pin wiring, signal toggle, inspector verification, and component deletion
 - [x] `docs/RTL_TO_STA_BRIDGE_DESIGN.md` — Complete architectural proposal for integration with STA Playground
 
-### Phase 6: Interactive RTL Coding Fundamentals
+### Phase 6: Interactive RTL Coding Fundamentals & Autonomous Integration
 - [x] **Interactive Verilog Explainer**:
   - Interactive construct explainer bar embedded in Generated Verilog drawer with 6 construct chips:
     - Continuous assignments (`assign`)
@@ -94,27 +104,25 @@ Last Updated: 2026-10-29 00:44 EDT
   - Reset executes strictly on the $0 \to 1$ rising clock edge (immune on falling edges and static intervals).
   - Explicitly documented priority: Synchronous Reset strictly overrides Enable (`if (rst) q <= 1'b0; else if (en) q <= d;`).
 - [x] **Expanded RTL Presets (16 total)**:
-  - Added `full-adder`: 1-Bit Full Adder with SUM and COUT.
-  - Added `mux-cond`: 2:1 MUX using continuous ternary conditional (`assign y = sel ? b : a`).
-  - Added `mux-case`: 2:1 MUX using procedural `case` statement.
-  - Added `dff-enable`: DFFE with clock enable.
-  - Added `dff-sync-reset`: DFFSR with synchronous reset.
-  - Added `dff-esr-priority`: DFFESR demonstrating Reset priority over Enable.
-  - Added `blocking-vs-nonblocking`: 2-stage shift register demonstrating nonblocking assignment concurrency.
+  - Added `full-adder`, `mux-cond`, `mux-case`, `dff-enable`, `dff-sync-reset`, `dff-esr-priority`, `blocking-vs-nonblocking`.
 - [x] **Expanded Guided Lessons (12 total)**:
-  - Added Lesson 9: 1-Bit Full Adder & Carry Propagation ($2^3 = 8$ truth table validation).
-  - Added Lesson 10: DFFE: Register with Clock Enable (load and retention validation).
-  - Added Lesson 11: Synchronous Reset with Documented Priority (priority conflict validation).
-  - Added Lesson 12: Blocking vs Nonblocking Pipeline Semantics (cycle-by-cycle pulse tracing).
-- [x] **Verification & Tests (43 Automated Tests, 11 Yosys Modules)**:
-  - Unit tests expanded from 37 to 43 passed (`node tests/tests.js`).
-  - Yosys real HDL compilation expanded from 6 to 11 passed (`node tests/verilog_verification/run_yosys_verification.js`).
-  - In-browser Edge CDP automated smoke tests verified with 0 uncaught exceptions.
+  - Added Lesson 9 (Full Adder), Lesson 10 (DFFE Enable/Retention), Lesson 11 (Sync Reset Priority), Lesson 12 (Blocking vs Nonblocking Pipeline).
+- [x] **Integration of Stress-Testing Harness**:
+  - Merged `test/stress-testing-harness` (`1177947`) with zero conflicts.
+  - Port-isolated browser worker (`STRESS_HTTP_PORT`, `STRESS_CDP_PORT`).
+  - Executed 445-batch smoke test on integrated baseline with 0 failures.
+- [x] **HDL Verification Closure via Icarus Verilog WASM**:
+  - Incorporated `@veriflow/iverilog-wasm` test runner and differential suite.
+  - All 11 benchmark modules compiled and simulated with 0 assertion failures.
+  - 34 differential cross-engine checks verified bit-for-bit equivalence between JS and compiled Verilog.
+- [x] **Cross-Module Regression Tests**:
+  - Added Section 14 to `tests/tests.js` (Heterogeneous pipeline, serialization round-trip, dual Verilog perspectives, waveform history, cycle detection immunity, clock sensitivity).
+  - Total unit tests expanded to 49 passed, 0 failed.
 
 ---
 
 ## Known Limitations & Next Steps
-1. Single-bit signals only (multi-bit buses/vectors planned for future phase).
+1. Single-bit signals only (multi-bit buses/vectors `[N:0]` planned for Phase 7).
 2. Combinational feedback loops strictly rejected (asynchronous SR latches unsupported by design in v1).
 3. Truth tables restricted to $\le 4$ independent inputs ($2^4 = 16$ rows) for UI responsiveness.
-4. Physical timing bridge implementation (`src/bridge/sta_exporter.js`) ready to be built in subsequent phase according to specification in `docs/RTL_TO_STA_BRIDGE_DESIGN.md`.
+4. Physical timing bridge implementation (`src/bridge/sta_exporter.js`) ready to be built in Phase 7 according to specification in `docs/RTL_TO_STA_BRIDGE_DESIGN.md`.
