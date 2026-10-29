@@ -136,10 +136,27 @@ export class RTLPlaygroundApp {
     }
 
     _loadDefaultCircuit() {
-        // Load Half Adder preset by default for immediate exploration
-        this.loadPreset('half-adder');
-        const select = document.getElementById('preset-select');
-        if (select) select.value = 'half-adder';
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPreset = urlParams.get('preset');
+        if (urlPreset && PRESETS[urlPreset]) {
+            this.loadPreset(urlPreset);
+            const select = document.getElementById('preset-select');
+            if (select) select.value = urlPreset;
+        } else {
+            // Load Half Adder preset by default for immediate exploration
+            this.loadPreset('half-adder');
+            const select = document.getElementById('preset-select');
+            if (select) select.value = 'half-adder';
+        }
+
+        const urlLesson = urlParams.get('lesson');
+        if (urlLesson && this.lessons) {
+            // Switch to lessons tab
+            const lessonTabBtn = document.querySelector('.sidebar-tab-btn[data-tab="lessons"]');
+            if (lessonTabBtn) lessonTabBtn.click();
+            const targetLesson = this.lessons.getLessonById ? this.lessons.getLessonById(urlLesson) : null;
+            if (targetLesson) this.lessons.openLesson(targetLesson);
+        }
     }
 }
 

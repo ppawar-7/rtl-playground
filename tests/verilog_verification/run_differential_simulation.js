@@ -10,6 +10,7 @@
  */
 
 import { simulate } from '@veriflow/iverilog-wasm';
+import path from 'node:path';
 import { CircuitGraph, resetIdCounter } from '../../src/engine/circuit_graph.js';
 import { LogicSimulator } from '../../src/engine/logic_simulator.js';
 import { SequentialEngine } from '../../src/engine/sequential_engine.js';
@@ -750,7 +751,7 @@ endmodule
 }
 
 console.log("\n================================================================================");
-console.log(`   Differential Summary: ${passedTests}/${totalTests} Checks PASSED, ${mismatches.length} Mismatches`);
+console.log(`   Single-Bit Fundamentals Differential: ${passedTests}/${totalTests} Checks PASSED, ${mismatches.length} Mismatches`);
 console.log("================================================================================");
 
 if (mismatches.length > 0) {
@@ -758,3 +759,10 @@ if (mismatches.length > 0) {
     console.table(mismatches);
     process.exit(1);
 }
+
+// Chain Advanced RTL Lab Differential Verification
+console.log("\n");
+const { spawnSync } = await import('node:child_process');
+const advRes = spawnSync(process.execPath, [path.resolve('tests/verilog_verification/run_advanced_differential.js')], { stdio: 'inherit' });
+if (advRes.status !== 0) process.exit(advRes.status);
+

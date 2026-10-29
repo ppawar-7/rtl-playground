@@ -484,3 +484,25 @@ body {
     white-space: pre;
     max-height: 480px;
 }
+
+/* Navigation Back to RTL Fundamentals Button */
+.nav-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--accent-cyan);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.nav-back-btn:hover {
+    background-color: #374151;
+    color: #ffffff;
+    border-color: var(--accent-cyan);
+}

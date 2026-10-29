@@ -3,13 +3,19 @@
  * 
  * Compiles and simulates all benchmark Verilog modules and self-checking
  * testbenches using Icarus Verilog WebAssembly (@veriflow/iverilog-wasm).
- * Evaluates real event-driven simulation results and assertion outputs.
+ * Evaluates real event-driven simulation results and assertion outputs across
+ * both RTL Fundamentals and Advanced RTL Lab modules (17 suites total).
  */
 
 import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { simulate } from '@veriflow/iverilog-wasm';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const suites = [
+    // ─── Tier 1: Single-Bit RTL Fundamentals ───────────────────────────────────
     { name: 'gates', desc: 'Basic Logic Gates (AND, OR, NOT, NAND, NOR, XOR)' },
     { name: 'half_adder', desc: '1-Bit Half Adder (SUM, CARRY)' },
     { name: 'full_adder', desc: '1-Bit Full Adder (SUM, COUT across all 8 vectors)' },
@@ -20,12 +26,20 @@ const suites = [
     { name: 'dffsr', desc: 'DFF with Synchronous Reset (Posedge Clear)' },
     { name: 'dffesr', desc: 'DFF with Clock Enable & Reset (Reset Priority)' },
     { name: 'shift_reg', desc: '2-Stage Shift Register (Nonblocking Pipeline)' },
-    { name: 'multi_dff', desc: 'Multiple Flip-Flops on Shared Clock' }
+    { name: 'multi_dff', desc: 'Multiple Flip-Flops on Shared Clock' },
+
+    // ─── Tier 2: Advanced RTL Systems & Multi-Bit Datapaths ───────────────────
+    { name: 'adv_rca', desc: '4-Bit Ripple-Carry Adder (Full Carry Chain Propagation)' },
+    { name: 'adv_alu', desc: '4-Bit Educational ALU (Arithmetic, Logic, Shift & Status Flags)' },
+    { name: 'adv_reg', desc: '4-Bit Multi-Bit Register (Clock Enable & Sync Reset Priority)' },
+    { name: 'adv_counter', desc: '4-Bit Modulo Counter (Up/Down Counting & Terminal Count)' },
+    { name: 'adv_shift', desc: '4-Bit Universal Shift Register (SISO / SIPO / PISO / Hold)' },
+    { name: 'adv_fsm', desc: 'Finite State Machine (Deterministic 2-Process Traffic Controller)' }
 ];
 
 console.log("================================================================================");
-console.log("   RTL Playground — Icarus Verilog Functional Testbench Simulation");
-console.log("   Engine: Icarus Verilog (WASM ivlpp + ivl + vvp)");
+console.log("   PD Playground — Comprehensive Icarus Verilog Functional Simulation (17 Suites)");
+console.log("   Engine: Icarus Verilog WebAssembly (@veriflow/iverilog-wasm)");
 console.log("================================================================================\n");
 
 let totalSuites = suites.length;
@@ -33,8 +47,8 @@ let passedSuites = 0;
 let failedSuites = 0;
 
 for (const suite of suites) {
-    const vPath = `tests/verilog_verification/${suite.name}.v`;
-    const tbPath = `tests/verilog_verification/${suite.name}_tb.v`;
+    const vPath = resolve(__dirname, `${suite.name}.v`);
+    const tbPath = resolve(__dirname, `${suite.name}_tb.v`);
 
     const vCode = readFileSync(vPath, 'utf8');
     const tbCode = readFileSync(tbPath, 'utf8');
@@ -49,7 +63,7 @@ for (const suite of suites) {
         ]
     });
 
-    if (res.success && res.exitCode === 0 && !res.stdout.includes('ERROR') && !res.stdout.includes('FAILED')) {
+    if (res.success && res.exitCode === 0 && !res.stdout.includes('ERROR') && !res.stdout.includes('FAIL')) {
         console.log(`  ✅ PASSED (${res.timings?.run || 0}ms simulation)`);
         const lines = res.stdout.trim().split('\n');
         for (const line of lines) {

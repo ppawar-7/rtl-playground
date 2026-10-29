@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "test": "node tests/tests.js",
+    "test:advanced": "node tests/advanced/run_all_tests.js",
     "test:yosys": "node tests/verilog_verification/run_yosys_verification.js",
     "test:iverilog": "node tests/verilog_verification/run_iverilog_simulation.js",
     "test:differential": "node tests/verilog_verification/run_differential_simulation.js",
     "test:browser": "node tests/browser_smoke_test.js",
-    "test:stress": "node tests/stress/stress_runner.js"
+    "test:browser:advanced": "node tests/advanced/browser_advanced_test.js",
+    "test:stress": "node tests/stress/stress_runner.js",
+    "test:all": "node tests/run_all_integrated_tests.js"
   },
   "devDependencies": {
     "@veriflow/iverilog-wasm": "^0.1.4",

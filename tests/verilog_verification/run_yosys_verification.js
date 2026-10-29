@@ -1,7 +1,7 @@
 /**
  * run_yosys_verification.js — Real HDL Synthesis & Elaboration Verification
  * 
- * Compiles and checks all 6 generated Verilog modules using Yosys AST parser,
+ * Compiles and checks all 17 generated Verilog modules using Yosys AST parser,
  * RTLIL generator, hierarchy elaboration, and design check.
  */
 
@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { runYosys } from '@yowasp/yosys';
 
 const modules = [
+    // ─── Tier 1: Single-Bit RTL Fundamentals ───────────────────────────────────
     { name: 'gates', file: 'tests/verilog_verification/gates.v', top: 'gates_module' },
     { name: 'half_adder', file: 'tests/verilog_verification/half_adder.v', top: 'half_adder_module' },
     { name: 'mux2', file: 'tests/verilog_verification/mux2.v', top: 'mux2_module' },
@@ -19,10 +20,18 @@ const modules = [
     { name: 'dffe', file: 'tests/verilog_verification/dffe.v', top: 'dffe_module' },
     { name: 'dffsr', file: 'tests/verilog_verification/dffsr.v', top: 'dffsr_module' },
     { name: 'dffesr', file: 'tests/verilog_verification/dffesr.v', top: 'dffesr_module' },
-    { name: 'mux_case', file: 'tests/verilog_verification/mux_case.v', top: 'mux_case_module' }
+    { name: 'mux_case', file: 'tests/verilog_verification/mux_case.v', top: 'mux_case_module' },
+
+    // ─── Tier 2: Advanced RTL Systems & Multi-Bit Datapaths ───────────────────
+    { name: 'adv_rca', file: 'tests/verilog_verification/adv_rca.v', top: 'adv_rca' },
+    { name: 'adv_alu', file: 'tests/verilog_verification/adv_alu.v', top: 'adv_alu' },
+    { name: 'adv_reg', file: 'tests/verilog_verification/adv_reg.v', top: 'adv_reg' },
+    { name: 'adv_counter', file: 'tests/verilog_verification/adv_counter.v', top: 'adv_counter' },
+    { name: 'adv_shift', file: 'tests/verilog_verification/adv_shift.v', top: 'adv_shift' },
+    { name: 'adv_fsm', file: 'tests/verilog_verification/adv_fsm.v', top: 'adv_fsm' }
 ];
 
-console.log("=== Running Real Verilog HDL Verification via Yosys ===");
+console.log("=== Running Real Verilog HDL Synthesis Verification via Yosys (17 Modules) ===");
 
 let passed = 0;
 let failed = 0;
@@ -53,7 +62,7 @@ for (const m of modules) {
 }
 
 console.log("\n========================================");
-console.log(`  Yosys Verification: ${passed} PASSED, ${failed} FAILED`);
+console.log(`  Yosys Verification: ${passed}/${modules.length} PASSED, ${failed} FAILED`);
 console.log("========================================");
 
 if (failed > 0) process.exit(1);

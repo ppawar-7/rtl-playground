@@ -56,6 +56,13 @@ class AdvancedRTLApp {
 
         // 6. Setup Verilog Selector
         this.setupVerilogTab();
+
+        // 7. Direct Tab Deep-linking via URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const reqTab = urlParams.get('tab');
+        if (reqTab && document.getElementById(`tab-${reqTab}`)) {
+            this.switchTab(reqTab);
+        }
     }
 
     setupNavigation() {
@@ -91,15 +98,41 @@ class AdvancedRTLApp {
 
         const completed = new Set(LessonProgressManager.getCompletedLessons());
 
+        const FUNDAMENTALS = [
+            { id: 1, title: 'Understanding Logic Gates', diff: 'Beginner', cat: 'Combinational', obj: 'Construct a 2-input AND gate and verify Boolean truth table.', preset: 'and-gate' },
+            { id: 2, title: 'Building a Half Adder', diff: 'Beginner', cat: 'Arithmetic', obj: '1-bit adder producing SUM (XOR) and CARRY (AND).', preset: 'half-adder' },
+            { id: 3, title: '2:1 Multiplexer', diff: 'Beginner', cat: 'Data Routing', obj: 'Conditional data steering using select line.', preset: 'mux-2to1' },
+            { id: 4, title: 'D Flip-Flop Register', diff: 'Intermediate', cat: 'Sequential', obj: 'Rising-edge state storage and clock sensitivity.', preset: 'dff-demo' },
+            { id: 5, title: 'MUX with Conditional Operator (?:)', diff: 'Intermediate', cat: 'RTL Coding', obj: 'Synthesizable continuous assign y = sel ? b : a.', preset: 'mux-cond' },
+            { id: 6, title: 'Register with Clock Enable (ASIC MUX)', diff: 'Intermediate', cat: 'Sequential', obj: 'Clock gating mitigation via recirculation MUX.', preset: 'reg-enable' },
+            { id: 7, title: 'Synchronous Reset Architecture', diff: 'Intermediate', cat: 'Sequential', obj: 'Deterministic posedge initialization without glitching.', preset: 'reg-sync-reset' },
+            { id: 8, title: 'Clock Timing & Waveforms', diff: 'Intermediate', cat: 'Timing', obj: 'Hold, setup, and sequential propagation cycles.', preset: 'shift-reg-2stage' },
+            { id: 9, title: '1-Bit Full Adder with Ripple', diff: 'Intermediate', cat: 'Arithmetic', obj: 'Full 8-state addition with input carry Cin.', preset: 'full-adder' },
+            { id: 10, title: 'Native Register with Clock Enable (DFFE)', diff: 'Advanced', cat: 'RTL Primitives', obj: 'Hardware-synthesizable DFFE with nonblocking Verilog.', preset: 'dff-enable' },
+            { id: 11, title: 'Priority in DFF with Enable & Sync Reset (DFFESR)', diff: 'Advanced', cat: 'RTL Primitives', obj: 'Strict reset-over-enable evaluation order in RTL.', preset: 'dff-esr-priority' },
+            { id: 12, title: 'Blocking vs Nonblocking Assignment Semantics', diff: 'Advanced', cat: 'Verilog Theory', obj: 'Pipeline races (= vs <=) and synthesis equivalence.', preset: 'blocking-vs-nonblocking' }
+        ];
+
         container.innerHTML = `
-            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
                 <div>
-                    <h2 style="font-size: 1.2rem; font-weight: 700;">Advanced RTL Curriculum</h2>
-                    <p style="color: var(--text-muted); font-size: 0.85rem;">Completed: ${completed.size} / ${ADVANCED_LESSONS.length}</p>
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan);">Comprehensive Digital RTL Curriculum (22 Lessons)</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">
+                        Tier 1–2: RTL Fundamentals (12 Lessons in Gate Editor) &nbsp;•&nbsp;
+                        Tier 3–4: Advanced Systems & FSMs (10 Lessons Verified: ${completed.size} / ${ADVANCED_LESSONS.length})
+                    </p>
                 </div>
-                <button id="btn-reset-lessons" class="btn btn-secondary btn-sm">Reset Progress</button>
+                <div style="display:flex; gap: 8px;">
+                    <a href="../index.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">← Open Fundamentals Editor</a>
+                    <button id="btn-reset-lessons" class="btn btn-secondary btn-sm">Reset Progress</button>
+                </div>
             </div>
-            <div class="lessons-list">
+
+            <!-- Tier 3 & 4: Advanced RTL Lab Lessons -->
+            <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; color: #f3f4f6;">
+                Part 2: Multi-Bit Vectors, Datapaths, Counters & FSMs (Lessons 13–22)
+            </h3>
+            <div class="lessons-list" style="margin-bottom: 28px;">
                 ${ADVANCED_LESSONS.map((l, idx) => {
                     const isDone = completed.has(l.id);
                     return `
@@ -111,7 +144,7 @@ class AdvancedRTLApp {
                                     </span>
                                     <span class="badge">${l.category}</span>
                                 </div>
-                                <div class="lesson-title">${idx + 1}. ${l.title}</div>
+                                <div class="lesson-title">${idx + 13}. ${l.title}</div>
                                 <div class="lesson-obj">${l.objective}</div>
                                 <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 10px;">${l.challenge}</div>
                             </div>
@@ -124,6 +157,30 @@ class AdvancedRTLApp {
                         </div>
                     `;
                 }).join('')}
+            </div>
+
+            <!-- Tier 1 & 2: RTL Fundamentals (Single-bit) -->
+            <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; color: #f3f4f6;">
+                Part 1: Single-Bit RTL Fundamentals (Lessons 1–12)
+            </h3>
+            <div class="lessons-list">
+                ${FUNDAMENTALS.map((f) => `
+                    <div class="lesson-card" style="border-left: 3px solid var(--accent-cyan);">
+                        <div>
+                            <div class="lesson-header">
+                                <span class="badge badge-primary">${f.diff}</span>
+                                <span class="badge">${f.cat}</span>
+                            </div>
+                            <div class="lesson-title">${f.id}. ${f.title}</div>
+                            <div class="lesson-obj">${f.obj}</div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <a href="../index.html?preset=${f.preset}" class="btn btn-secondary btn-block btn-sm" style="text-decoration:none; text-align:center; display:block;">
+                                Launch in Visual Editor →
+                            </a>
+                        </div>
+                    </div>
+                `).join('')}
             </div>
         `;
 
@@ -217,4 +274,5 @@ class AdvancedRTLApp {
 // Bootstrap on DOMContentLoaded
 window.addEventListener('DOMContentLoaded', () => {
     window.advancedRTLApp = new AdvancedRTLApp();
+    window.app = window.advancedRTLApp;
 });

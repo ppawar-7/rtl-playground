@@ -1018,6 +1018,10 @@ export class LessonManager {
         this.renderList();
     }
 
+    getLessonById(id) {
+        return LESSONS.find(l => l.id === id);
+    }
+
     renderList() {
         if (!this.container) return;
 
@@ -1038,7 +1042,35 @@ export class LessonManager {
             `;
         });
 
-        html += `</div>`;
+        html += `
+            <div class="inspector-card-title" style="margin-top: 16px;">Advanced RTL Systems (Lessons 13–22)</div>
+            <div class="advanced-curriculum-nav" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                <a href="advanced-lab/index.html?tab=datapath" class="lesson-card" style="text-decoration:none; display:block;">
+                    <div class="lesson-header">
+                        <span class="lesson-title">13–16: Vectors, Adders & ALU Datapaths</span>
+                        <span class="lesson-badge advanced">ADV</span>
+                    </div>
+                    <div class="lesson-desc">Multi-bit buses, carry-lookahead vs ripple adder, ALU flags (Z, C, V, N)</div>
+                </a>
+                <a href="advanced-lab/index.html?tab=sequential" class="lesson-card" style="text-decoration:none; display:block;">
+                    <div class="lesson-header">
+                        <span class="lesson-title">17–20: Registers, Counters & Shift Registers</span>
+                        <span class="lesson-badge advanced">ADV</span>
+                    </div>
+                    <div class="lesson-desc">Recirculating multi-bit registers, modulo binary counters, universal shift registers</div>
+                </a>
+                <a href="advanced-lab/index.html?tab=fsm" class="lesson-card" style="text-decoration:none; display:block;">
+                    <div class="lesson-header">
+                        <span class="lesson-title">21–22: Moore & Mealy State Machines</span>
+                        <span class="lesson-badge advanced">ADV</span>
+                    </div>
+                    <div class="lesson-desc">Interactive FSM state diagrams, sequence detectors, zero-latency Mealy vs Moore outputs</div>
+                </a>
+                <a href="advanced-lab/index.html?tab=lessons" class="btn btn-primary btn-sm" style="text-align:center; text-decoration:none; margin-top:4px; display:block;">
+                    🚀 Open Advanced Lab Curriculum (10 Lessons) →
+                </a>
+            </div>
+        </div>`;
         this.container.innerHTML = html;
 
         // Bind clicks
@@ -1133,6 +1165,36 @@ export class LessonManager {
 
         fb.style.display = 'block';
         fb.className = `lesson-feedback-box ${result.pass ? 'feedback-success' : 'feedback-error'}`;
-        fb.innerHTML = result.message;
+
+        let extraGuide = '';
+        if (result.pass) {
+            if (this.currentLesson.id === 'lesson-2-half-adder' || this.currentLesson.id === 'lesson-9-full-adder') {
+                extraGuide = `
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                        <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">You've mastered 1-bit binary addition! Next, explore how 4-bit ripple-carry adders and full ALUs are built using multi-bit buses.</div>
+                        <a href="advanced-lab/index.html?tab=datapath" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open 4-Bit Adder & ALU Lab →</a>
+                    </div>
+                `;
+            } else if (this.currentLesson.id === 'lesson-6-reg-enable' || this.currentLesson.id === 'lesson-10-reg-enable' || this.currentLesson.id === 'lesson-7-sync-reset' || this.currentLesson.id === 'lesson-11-sync-reset-priority') {
+                extraGuide = `
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                        <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">Take registers further with multi-bit vector registers, binary modulo counters, and universal shift registers.</div>
+                        <a href="advanced-lab/index.html?tab=sequential" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open Multi-Bit Sequential Lab →</a>
+                    </div>
+                `;
+            } else if (this.currentLesson.id === 'lesson-3-mux' || this.currentLesson.id === 'lesson-5-mux-cond') {
+                extraGuide = `
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                        <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">Explore how multi-bit multiplexers route data words inside arithmetic datapaths and ALUs.</div>
+                        <a href="advanced-lab/index.html?tab=datapath" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open Datapath Visualizer →</a>
+                    </div>
+                `;
+            }
+        }
+
+        fb.innerHTML = result.message + extraGuide;
     }
 }
