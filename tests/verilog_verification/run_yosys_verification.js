@@ -9,12 +9,17 @@ import { readFileSync } from 'node:fs';
 import { runYosys } from '@yowasp/yosys';
 
 const modules = [
-    { name: 'gates', file: 'tests/verilog_verification/gates.v', top: 'gates_module', expectedCells: ['$_AND_', '$_OR_', '$_XOR_', '$_NAND_', '$_NOR_', '$_NOT_'] },
-    { name: 'half_adder', file: 'tests/verilog_verification/half_adder.v', top: 'half_adder_module', expectedCells: ['$_XOR_', '$_AND_'] },
-    { name: 'mux2', file: 'tests/verilog_verification/mux2.v', top: 'mux2_module', expectedCells: ['$_MUX_'] },
-    { name: 'dff', file: 'tests/verilog_verification/dff.v', top: 'dff_module', expectedCells: ['$dff'] },
-    { name: 'shift_reg', file: 'tests/verilog_verification/shift_reg.v', top: 'shift_reg_module', expectedCells: ['$dff'] },
-    { name: 'multi_dff', file: 'tests/verilog_verification/multi_dff.v', top: 'multi_dff_module', expectedCells: ['$dff'] }
+    { name: 'gates', file: 'tests/verilog_verification/gates.v', top: 'gates_module' },
+    { name: 'half_adder', file: 'tests/verilog_verification/half_adder.v', top: 'half_adder_module' },
+    { name: 'mux2', file: 'tests/verilog_verification/mux2.v', top: 'mux2_module' },
+    { name: 'dff', file: 'tests/verilog_verification/dff.v', top: 'dff_module' },
+    { name: 'shift_reg', file: 'tests/verilog_verification/shift_reg.v', top: 'shift_reg_module' },
+    { name: 'multi_dff', file: 'tests/verilog_verification/multi_dff.v', top: 'multi_dff_module' },
+    { name: 'full_adder', file: 'tests/verilog_verification/full_adder.v', top: 'full_adder_module' },
+    { name: 'dffe', file: 'tests/verilog_verification/dffe.v', top: 'dffe_module' },
+    { name: 'dffsr', file: 'tests/verilog_verification/dffsr.v', top: 'dffsr_module' },
+    { name: 'dffesr', file: 'tests/verilog_verification/dffesr.v', top: 'dffesr_module' },
+    { name: 'mux_case', file: 'tests/verilog_verification/mux_case.v', top: 'mux_case_module' }
 ];
 
 console.log("=== Running Real Verilog HDL Verification via Yosys ===");

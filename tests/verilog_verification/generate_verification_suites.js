@@ -7,6 +7,7 @@
 import { writeFileSync } from 'node:fs';
 import { CircuitGraph, resetIdCounter } from '../../src/engine/circuit_graph.js';
 import { VerilogGenerator } from '../../src/engine/verilog_generator.js';
+import { PRESETS } from '../../src/modules/presets.js';
 
 // ─── 1. Basic Logic Gates ───────────────────────────────────────────────────
 
@@ -535,7 +536,205 @@ module multi_dff_tb;
 endmodule
 `;
 
+const fullAdderTb = `\`timescale 1ns / 1ps
+
+module full_adder_tb;
+    reg a, b, cin;
+    wire sum, cout;
+    integer errors = 0;
+
+    full_adder_module uut (
+        .a(a),
+        .b(b),
+        .cin(cin),
+        .sum(sum),
+        .cout(cout)
+    );
+
+    initial begin
+        a = 0; b = 0; cin = 0; #10;
+        if (sum !== 0 || cout !== 0) errors = errors + 1;
+        a = 0; b = 0; cin = 1; #10;
+        if (sum !== 1 || cout !== 0) errors = errors + 1;
+        a = 0; b = 1; cin = 0; #10;
+        if (sum !== 1 || cout !== 0) errors = errors + 1;
+        a = 0; b = 1; cin = 1; #10;
+        if (sum !== 0 || cout !== 1) errors = errors + 1;
+        a = 1; b = 0; cin = 0; #10;
+        if (sum !== 1 || cout !== 0) errors = errors + 1;
+        a = 1; b = 0; cin = 1; #10;
+        if (sum !== 0 || cout !== 1) errors = errors + 1;
+        a = 1; b = 1; cin = 0; #10;
+        if (sum !== 0 || cout !== 1) errors = errors + 1;
+        a = 1; b = 1; cin = 1; #10;
+        if (sum !== 1 || cout !== 1) errors = errors + 1;
+
+        if (errors == 0) $display("FULL ADDER VERIFIED.");
+        else $fatal(1);
+        $finish;
+    end
+endmodule
+`;
+
+const dffeTb = `\`timescale 1ns / 1ps
+
+module dffe_tb;
+    reg clk, d, en;
+    wire q;
+    integer errors = 0;
+
+    dffe_module uut (
+        .clk(clk),
+        .d(d),
+        .en(en),
+        .q(q)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0; d = 0; en = 0;
+        #12;
+        d = 1; en = 0; #10;
+        if (q !== 0) errors = errors + 1;
+        en = 1; #10;
+        if (q !== 1) errors = errors + 1;
+        en = 0; d = 0; #10;
+        if (q !== 1) errors = errors + 1;
+
+        if (errors == 0) $display("DFFE VERIFIED.");
+        else $fatal(1);
+        $finish;
+    end
+endmodule
+`;
+
+const dffsrTb = `\`timescale 1ns / 1ps
+
+module dffsr_tb;
+    reg clk, d, rst;
+    wire q;
+    integer errors = 0;
+
+    dffsr_module uut (
+        .clk(clk),
+        .d(d),
+        .rst(rst),
+        .q(q)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0; d = 0; rst = 0;
+        #12;
+        d = 1; rst = 0; #10;
+        if (q !== 1) errors = errors + 1;
+        rst = 1; #10;
+        if (q !== 0) errors = errors + 1;
+
+        if (errors == 0) $display("DFFSR VERIFIED.");
+        else $fatal(1);
+        $finish;
+    end
+endmodule
+`;
+
+const dffesrTb = `\`timescale 1ns / 1ps
+
+module dffesr_tb;
+    reg clk, d, en, rst;
+    wire q;
+    integer errors = 0;
+
+    dffesr_module uut (
+        .clk(clk),
+        .d(d),
+        .en(en),
+        .rst(rst),
+        .q(q)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0; d = 0; en = 0; rst = 0;
+        #12;
+        d = 1; en = 1; rst = 0; #10;
+        if (q !== 1) errors = errors + 1;
+        rst = 1; en = 1; d = 1; #10;
+        if (q !== 0) errors = errors + 1;
+
+        if (errors == 0) $display("DFFESR PRIORITY VERIFIED.");
+        else $fatal(1);
+        $finish;
+    end
+endmodule
+`;
+
+const muxCaseTb = `\`timescale 1ns / 1ps
+
+module mux_case_tb;
+    reg a, b, sel;
+    wire y;
+    integer errors = 0;
+
+    mux_case_module uut (
+        .a(a),
+        .b(b),
+        .sel(sel),
+        .y(y)
+    );
+
+    initial begin
+        a = 1; b = 0; sel = 0; #10;
+        if (y !== 1) errors = errors + 1;
+        sel = 1; #10;
+        if (y !== 0) errors = errors + 1;
+
+        if (errors == 0) $display("MUX CASE VERIFIED.");
+        else $fatal(1);
+        $finish;
+    end
+endmodule
+`;
+
 // ─── Main Generator Execution ───────────────────────────────────────────────
+
+function buildFullAdderCircuit() {
+    resetIdCounter();
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['full-adder'].circuit);
+    return g;
+}
+
+function buildDffeCircuit() {
+    resetIdCounter();
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['dff-enable'].circuit);
+    return g;
+}
+
+function buildDffsrCircuit() {
+    resetIdCounter();
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['dff-sync-reset'].circuit);
+    return g;
+}
+
+function buildDffesrCircuit() {
+    resetIdCounter();
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['dff-esr-priority'].circuit);
+    return g;
+}
+
+function buildMuxCaseCircuit() {
+    resetIdCounter();
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['mux-case'].circuit);
+    return g;
+}
 
 const suites = [
     { name: 'gates', builder: buildGatesCircuit, moduleName: 'gates_module', tb: gatesTb },
@@ -543,7 +742,12 @@ const suites = [
     { name: 'mux2', builder: buildMux2Circuit, moduleName: 'mux2_module', tb: mux2Tb },
     { name: 'dff', builder: buildDffCircuit, moduleName: 'dff_module', tb: dffTb },
     { name: 'shift_reg', builder: buildShiftRegCircuit, moduleName: 'shift_reg_module', tb: shiftRegTb },
-    { name: 'multi_dff', builder: buildMultiDffCircuit, moduleName: 'multi_dff_module', tb: multiDffTb }
+    { name: 'multi_dff', builder: buildMultiDffCircuit, moduleName: 'multi_dff_module', tb: multiDffTb },
+    { name: 'full_adder', builder: buildFullAdderCircuit, moduleName: 'full_adder_module', tb: fullAdderTb },
+    { name: 'dffe', builder: buildDffeCircuit, moduleName: 'dffe_module', tb: dffeTb },
+    { name: 'dffsr', builder: buildDffsrCircuit, moduleName: 'dffsr_module', tb: dffsrTb },
+    { name: 'dffesr', builder: buildDffesrCircuit, moduleName: 'dffesr_module', tb: dffesrTb },
+    { name: 'mux_case', builder: buildMuxCaseCircuit, moduleName: 'mux_case_module', tb: muxCaseTb, procedural: true }
 ];
 
 console.log("Generating Real Verilog and Self-Checking Testbenches...");
@@ -551,7 +755,7 @@ console.log("Generating Real Verilog and Self-Checking Testbenches...");
 for (const suite of suites) {
     const graph = suite.builder();
     const vgen = new VerilogGenerator(graph);
-    const res = vgen.generate(suite.moduleName);
+    const res = suite.procedural ? vgen.generateProcedural(suite.moduleName) : vgen.generate(suite.moduleName);
     if (!res.ok) {
         console.error(`Failed to generate Verilog for ${suite.name}: ${res.error}`);
         continue;
@@ -565,4 +769,4 @@ for (const suite of suites) {
     console.log(`  ✓ Generated ${vPath} and ${tbPath}`);
 }
 
-console.log("All 6 Verilog suites generated successfully.");
+console.log(`All ${suites.length} Verilog suites generated successfully.`);

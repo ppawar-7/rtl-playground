@@ -100,35 +100,82 @@ export class SequentialEngine {
     _processRisingEdge() {
         const dffs = this.graph.getDFFComponents();
 
-        // Phase 1: Determine which DFFs are connected to an active clock source
+        // Phase 1: Determine which sequential elements are connected to an active clock source
         const activeDFFs = dffs.filter(dff => {
-            const clkPin = dff.inputs[1]; // CLK pin
+            const clkPin = dff.inputs[1]; // CLK pin (always pin 1)
             if (!clkPin || !clkPin.connectedTo) return false;
             const srcComp = this.graph.getComponent(clkPin.connectedTo.componentId);
             return srcComp && srcComp.type === 'CLOCK';
         });
 
-        // Phase 2: Sample all D inputs (using current/pre-edge values)
-        const sampledD = new Map();
+        // Phase 2: Sample all inputs simultaneously (using current/pre-edge values - nonblocking semantics)
+        const nextStates = new Map();
         for (const dff of activeDFFs) {
-            const dPin = dff.inputs[0]; // D input
-            let dValue;
-            if (dPin.connectedTo) {
-                dValue = this.graph.getPinValue(dPin.connectedTo);
-            } else {
-                dValue = null; // Unconnected D → null (not silently retaining old Q)
+            const currentState = this.dffStates.get(dff.id)?.Q ?? 0;
+
+            // Sample D input (pin 0)
+            const dPin = dff.inputs[0];
+            const dVal = (dPin && dPin.connectedTo) ? this.graph.getPinValue(dPin.connectedTo) : null;
+
+            let nextQ = null;
+
+            if (dff.type === 'DFF') {
+                nextQ = dVal;
+            } else if (dff.type === 'DFFE') {
+                // Pin 2: EN
+                const enPin = dff.inputs[2];
+                const enVal = (enPin && enPin.connectedTo) ? this.graph.getPinValue(enPin.connectedTo) : null;
+                if (enVal === 1) {
+                    nextQ = dVal;
+                } else if (enVal === 0) {
+                    nextQ = currentState; // Retain previous state when enable is inactive (0)
+                } else {
+                    nextQ = null; // Unconnected or undefined enable propagates null
+                }
+            } else if (dff.type === 'DFFSR') {
+                // Pin 2: RST
+                const rstPin = dff.inputs[2];
+                const rstVal = (rstPin && rstPin.connectedTo) ? this.graph.getPinValue(rstPin.connectedTo) : null;
+                if (rstVal === 1) {
+                    nextQ = 0; // Synchronous reset clears Q to 0 on posedge clk!
+                } else if (rstVal === 0) {
+                    nextQ = dVal; // Normal data load
+                } else {
+                    nextQ = null; // Unconnected or undefined reset propagates null
+                }
+            } else if (dff.type === 'DFFESR') {
+                // Pin 2: EN, Pin 3: RST
+                const enPin = dff.inputs[2];
+                const enVal = (enPin && enPin.connectedTo) ? this.graph.getPinValue(enPin.connectedTo) : null;
+                const rstPin = dff.inputs[3];
+                const rstVal = (rstPin && rstPin.connectedTo) ? this.graph.getPinValue(rstPin.connectedTo) : null;
+
+                // Documented Priority: Synchronous Reset takes priority over Enable
+                if (rstVal === 1) {
+                    nextQ = 0; // Synchronous reset dominates
+                } else if (rstVal === 0) {
+                    if (enVal === 1) {
+                        nextQ = dVal;
+                    } else if (enVal === 0) {
+                        nextQ = currentState; // Retain previous state
+                    } else {
+                        nextQ = null;
+                    }
+                } else {
+                    nextQ = null;
+                }
             }
-            sampledD.set(dff.id, dValue);
+
+            nextStates.set(dff.id, nextQ);
         }
 
-        // Phase 3: Update all Q outputs simultaneously
+        // Phase 3: Update all Q outputs simultaneously (true hardware nonblocking semantics)
         for (const dff of activeDFFs) {
-            const dValue = sampledD.get(dff.id);
+            const nextQ = nextStates.get(dff.id);
             const state = this.dffStates.get(dff.id);
             if (state) {
-                // If D is null (unconnected), Q becomes null — visible undefined state
-                state.Q = dValue;
-                dff.outputs[0].value = dValue;
+                state.Q = nextQ;
+                dff.outputs[0].value = nextQ;
             }
         }
     }
@@ -144,19 +191,33 @@ export class SequentialEngine {
             signals: {}
         };
 
-        // Record DFF signals
+        // Record DFF / Register signals
         for (const dff of this.graph.getDFFComponents()) {
             const dPin = dff.inputs[0];
-            const dValue = dPin.connectedTo
+            const dValue = dPin && dPin.connectedTo
                 ? this.graph.getPinValue(dPin.connectedTo)
                 : null;
 
-            snapshot.signals[dff.id] = {
+            const sig = {
                 label: dff.label,
-                type: 'DFF',
+                type: dff.type,
                 D: dValue,
                 Q: this.dffStates.get(dff.id)?.Q ?? null
             };
+
+            if (dff.type === 'DFFE' || dff.type === 'DFFESR') {
+                const enPin = dff.inputs[2];
+                sig.EN = (enPin && enPin.connectedTo) ? this.graph.getPinValue(enPin.connectedTo) : null;
+            }
+            if (dff.type === 'DFFSR') {
+                const rstPin = dff.inputs[2];
+                sig.RST = (rstPin && rstPin.connectedTo) ? this.graph.getPinValue(rstPin.connectedTo) : null;
+            } else if (dff.type === 'DFFESR') {
+                const rstPin = dff.inputs[3];
+                sig.RST = (rstPin && rstPin.connectedTo) ? this.graph.getPinValue(rstPin.connectedTo) : null;
+            }
+
+            snapshot.signals[dff.id] = sig;
         }
 
         // Record INPUT values

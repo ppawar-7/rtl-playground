@@ -143,7 +143,30 @@ export class VerilogGenerator {
                 for (const dff of groupDffs) {
                     const dExpr = this._buildExpression(dff.id, 'in0');
                     const qName = `${this._getSignalName(dff)}_q`;
-                    lines.push(`        ${qName} <= ${dExpr};`);
+
+                    if (dff.type === 'DFF') {
+                        lines.push(`        ${qName} <= ${dExpr};`);
+                    } else if (dff.type === 'DFFE') {
+                        const enExpr = this._buildExpression(dff.id, 'in2');
+                        lines.push(`        if (${enExpr}) begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    } else if (dff.type === 'DFFSR') {
+                        const rstExpr = this._buildExpression(dff.id, 'in2');
+                        lines.push(`        if (${rstExpr}) begin`);
+                        lines.push(`            ${qName} <= 1'b0;`);
+                        lines.push(`        end else begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    } else if (dff.type === 'DFFESR') {
+                        const enExpr = this._buildExpression(dff.id, 'in2');
+                        const rstExpr = this._buildExpression(dff.id, 'in3');
+                        lines.push(`        if (${rstExpr}) begin`);
+                        lines.push(`            ${qName} <= 1'b0;`);
+                        lines.push(`        end else if (${enExpr}) begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    }
                 }
                 lines.push('    end');
             }
@@ -154,6 +177,175 @@ export class VerilogGenerator {
 
         const code = lines.join('\n');
         return { ok: true, code };
+    }
+
+    /**
+     * Generate procedural Verilog representation (using always @(*) and case/if-else).
+     * Provides students with the behavioral procedural coding perspective.
+     * @param {string} [moduleName='circuit']
+     * @returns {{ ok: boolean, code?: string, error?: string }}
+     */
+    generateProcedural(moduleName = 'circuit') {
+        const validation = this.graph.validateCircuit();
+        if (!validation.valid) {
+            return {
+                ok: false,
+                error: `Cannot generate Verilog: ${validation.errors.join('; ')}`,
+                code: this._generateErrorComment(validation)
+            };
+        }
+
+        const inputs = this.graph.getInputComponents();
+        const outputs = this.graph.getOutputComponents();
+        const clocks = this.graph.getClockComponents();
+        const dffs = this.graph.getDFFComponents();
+
+        if (inputs.length === 0 && outputs.length === 0 && clocks.length === 0) {
+            return {
+                ok: false,
+                error: 'Circuit has no inputs or outputs',
+                code: '// Empty circuit — add inputs and outputs to generate Verilog'
+            };
+        }
+
+        this.signalNames = new Map();
+        const usedNames = new Set();
+        const allComps = [...inputs, ...clocks, ...outputs, ...dffs];
+        for (const comp of allComps) {
+            let baseName = this._sanitizeName(comp.label) || comp.type.toLowerCase();
+            const suffix = comp.id.split('_').pop();
+            if (VERILOG_RESERVED.has(baseName)) {
+                baseName = `${baseName}_${suffix}`;
+            }
+            let uniqueName = baseName;
+            if (usedNames.has(uniqueName)) {
+                uniqueName = `${baseName}_${suffix}`;
+            }
+            let counter = 2;
+            while (usedNames.has(uniqueName)) {
+                uniqueName = `${baseName}_${counter++}`;
+            }
+            usedNames.add(uniqueName);
+            this.signalNames.set(comp.id, uniqueName);
+        }
+
+        const lines = [];
+        const ports = this._buildPortList(inputs, outputs, clocks);
+        lines.push(`module ${this._sanitizeName(moduleName)} (`);
+        lines.push(ports.map((p, i) => `    ${p}${i < ports.length - 1 ? ',' : ''}`).join('\n'));
+        lines.push(');');
+        lines.push('');
+
+        for (const inp of inputs) {
+            lines.push(`    input wire ${this._getSignalName(inp)};`);
+        }
+        for (const clk of clocks) {
+            lines.push(`    input wire ${this._getSignalName(clk)};`);
+        }
+        for (const out of outputs) {
+            lines.push(`    output reg ${this._getSignalName(out)};`);
+        }
+
+        if (dffs.length > 0) {
+            lines.push('');
+            for (const dff of dffs) {
+                lines.push(`    reg ${this._getSignalName(dff)}_q;`);
+            }
+        }
+
+        const combOutputs = outputs.filter(o => !this._isOutputDrivenByDFF(o));
+        if (combOutputs.length > 0) {
+            lines.push('');
+            lines.push('    // Combinational procedural block (always @(*) with case / if-else)');
+            lines.push('    always @(*) begin');
+            for (const out of combOutputs) {
+                const pin = out.inputs[0];
+                if (!pin || !pin.connectedTo) continue;
+                const srcComp = this.graph.getComponent(pin.connectedTo.componentId);
+                if (!srcComp) continue;
+                const outName = this._getSignalName(out);
+
+                if (srcComp.type === 'MUX2') {
+                    const selExpr = this._buildExpression(srcComp.id, 'in2');
+                    const aExpr = this._buildExpression(srcComp.id, 'in0');
+                    const bExpr = this._buildExpression(srcComp.id, 'in1');
+                    lines.push(`        case (${selExpr})`);
+                    lines.push(`            1'b0: ${outName} = ${aExpr};`);
+                    lines.push(`            1'b1: ${outName} = ${bExpr};`);
+                    lines.push(`            default: ${outName} = 1'bx;`);
+                    lines.push(`        endcase`);
+                } else {
+                    const expr = this._buildExpressionFromOutput(srcComp);
+                    lines.push(`        ${outName} = ${expr};`);
+                }
+            }
+            lines.push('    end');
+        }
+
+        const dffOutputs = outputs.filter(o => this._isOutputDrivenByDFF(o));
+        if (dffOutputs.length > 0) {
+            lines.push('');
+            lines.push('    always @(*) begin');
+            for (const out of dffOutputs) {
+                const pin = out.inputs[0];
+                const srcComp = this.graph.getComponent(pin.connectedTo.componentId);
+                const outName = this._getSignalName(out);
+                lines.push(`        ${outName} = ${this._buildExpressionFromOutput(srcComp)};`);
+            }
+            lines.push('    end');
+        }
+
+        if (dffs.length > 0) {
+            const dffsByClock = new Map();
+            for (const dff of dffs) {
+                const clkPin = dff.inputs[1];
+                let clkName = null;
+                if (clkPin && clkPin.connectedTo) {
+                    const clkComp = this.graph.getComponent(clkPin.connectedTo.componentId);
+                    if (clkComp) clkName = this._getSignalName(clkComp);
+                }
+                if (!clkName) clkName = clocks.length > 0 ? this._getSignalName(clocks[0]) : 'clk';
+                if (!dffsByClock.has(clkName)) dffsByClock.set(clkName, []);
+                dffsByClock.get(clkName).push(dff);
+            }
+
+            for (const [clkName, groupDffs] of dffsByClock) {
+                lines.push('');
+                lines.push(`    always @(posedge ${clkName}) begin`);
+                for (const dff of groupDffs) {
+                    const dExpr = this._buildExpression(dff.id, 'in0');
+                    const qName = `${this._getSignalName(dff)}_q`;
+                    if (dff.type === 'DFF') {
+                        lines.push(`        ${qName} <= ${dExpr};`);
+                    } else if (dff.type === 'DFFE') {
+                        const enExpr = this._buildExpression(dff.id, 'in2');
+                        lines.push(`        if (${enExpr}) begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    } else if (dff.type === 'DFFSR') {
+                        const rstExpr = this._buildExpression(dff.id, 'in2');
+                        lines.push(`        if (${rstExpr}) begin`);
+                        lines.push(`            ${qName} <= 1'b0;`);
+                        lines.push(`        end else begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    } else if (dff.type === 'DFFESR') {
+                        const enExpr = this._buildExpression(dff.id, 'in2');
+                        const rstExpr = this._buildExpression(dff.id, 'in3');
+                        lines.push(`        if (${rstExpr}) begin`);
+                        lines.push(`            ${qName} <= 1'b0;`);
+                        lines.push(`        end else if (${enExpr}) begin`);
+                        lines.push(`            ${qName} <= ${dExpr};`);
+                        lines.push(`        end`);
+                    }
+                }
+                lines.push('    end');
+            }
+        }
+
+        lines.push('');
+        lines.push('endmodule');
+        return { ok: true, code: lines.join('\n') };
     }
 
     /**
@@ -211,7 +403,7 @@ export class VerilogGenerator {
             return this._getSignalName(comp);
         }
 
-        if (comp.type === 'DFF') {
+        if (comp.type === 'DFF' || comp.type === 'DFFE' || comp.type === 'DFFSR' || comp.type === 'DFFESR') {
             return `${this._getSignalName(comp)}_q`;
         }
 
@@ -293,7 +485,7 @@ export class VerilogGenerator {
         const pin = outComp.inputs[0];
         if (!pin || !pin.connectedTo) return false;
         const srcComp = this.graph.getComponent(pin.connectedTo.componentId);
-        return srcComp && srcComp.type === 'DFF';
+        return srcComp && (srcComp.type === 'DFF' || srcComp.type === 'DFFE' || srcComp.type === 'DFFSR' || srcComp.type === 'DFFESR');
     }
 
     /**

@@ -127,6 +127,36 @@ export const COMPONENT_TYPES = {
         sequential: true,
         evaluate: null // Handled by SequentialEngine
     },
+    DFFE: {
+        label: 'DFF with Enable',
+        category: 'sequential',
+        inputCount: 3,
+        outputCount: 1,
+        inputLabels: ['D', 'CLK', 'EN'],
+        outputLabels: ['Q'],
+        sequential: true,
+        evaluate: null // Handled by SequentialEngine
+    },
+    DFFSR: {
+        label: 'DFF with Sync Reset',
+        category: 'sequential',
+        inputCount: 3,
+        outputCount: 1,
+        inputLabels: ['D', 'CLK', 'RST'],
+        outputLabels: ['Q'],
+        sequential: true,
+        evaluate: null // Handled by SequentialEngine
+    },
+    DFFESR: {
+        label: 'DFF with EN & RST',
+        category: 'sequential',
+        inputCount: 4,
+        outputCount: 1,
+        inputLabels: ['D', 'CLK', 'EN', 'RST'],
+        outputLabels: ['Q'],
+        sequential: true,
+        evaluate: null // Handled by SequentialEngine
+    },
     CLOCK: {
         label: 'Clock',
         category: 'sequential',
@@ -447,9 +477,8 @@ export class CircuitGraph extends EventEmitter {
 
         for (const conn of this.connections.values()) {
             const fromComp = this.components.get(conn.fromComponent);
-            // DFF Q output does NOT create a combinational dependency on DFF D input
-            // (the dependency is sequential, not combinational)
-            if (fromComp && fromComp.type === 'DFF') continue;
+            // Sequential register outputs (DFF, DFFE, etc.) do NOT create a combinational dependency
+            if (fromComp && (fromComp.type === 'DFF' || fromComp.type === 'DFFE' || fromComp.type === 'DFFSR' || fromComp.type === 'DFFESR')) continue;
 
             if (adj.has(conn.fromComponent)) {
                 adj.get(conn.fromComponent).push(conn.toComponent);
@@ -527,8 +556,8 @@ export class CircuitGraph extends EventEmitter {
 
         for (const conn of this.connections.values()) {
             const fromComp = this.components.get(conn.fromComponent);
-            // Skip DFF outputs (sequential, not combinational)
-            if (fromComp && fromComp.type === 'DFF') continue;
+            // Skip sequential register outputs (DFF, DFFE, etc.)
+            if (fromComp && (fromComp.type === 'DFF' || fromComp.type === 'DFFE' || fromComp.type === 'DFFSR' || fromComp.type === 'DFFESR')) continue;
 
             adj.get(conn.fromComponent).push(conn.toComponent);
             inDegree.set(conn.toComponent, (inDegree.get(conn.toComponent) || 0) + 1);
@@ -570,9 +599,11 @@ export class CircuitGraph extends EventEmitter {
         return [...this.components.values()].filter(c => c.type === 'CLOCK');
     }
 
-    /** Get all DFF-type components */
+    /** Get all sequential register components (DFF, DFFE, DFFSR, DFFESR) */
     getDFFComponents() {
-        return [...this.components.values()].filter(c => c.type === 'DFF');
+        return [...this.components.values()].filter(c => 
+            c.type === 'DFF' || c.type === 'DFFE' || c.type === 'DFFSR' || c.type === 'DFFESR'
+        );
     }
 
     /** Get all connections involving a specific component */

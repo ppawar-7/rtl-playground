@@ -75,3 +75,15 @@
 **Date**: 2026-10-29  
 **Decision**: Canvas component selection dynamically highlights the corresponding continuous assignment (`assign`), port definition, or procedural register (`always @(posedge clk)`) in the Verilog code pane, and renders an "RTL Hardware Mapping" inspector card with target standard cell details.  
 **Rationale**: Connects visual schematic representation directly to HDL text and ASIC physical synthesis concepts for students.
+
+## Decision 013: First-Class Registers with Enable (DFFE), Synchronous Reset (DFFSR), and Documented Priority (DFFESR)
+
+**Date**: 2026-10-29  
+**Decision**: Expanded the sequential model and component library to include first-class register blocks (`DFFE`, `DFFSR`, `DFFESR`) in addition to discrete gate/MUX subcircuits. Explicitly documented and implemented reset priority: when both synchronous reset and clock enable are active on the rising clock edge, reset dominates (`if (rst) q <= 1'b0; else if (en) q <= d;`).  
+**Rationale**: Students need to observe real ASIC register behaviors both at the structural discrete gate level (recirculating MUX / reset gating) and at the monolithic behavioral RTL cell level. Reset priority ensures critical safety resets are never blocked by an inactive enable line.
+
+## Decision 014: Interactive Verilog Construct Explainer & Dual RTL Coding Perspectives
+
+**Date**: 2026-10-29  
+**Decision**: Added an interactive RTL Construct Explainer bar directly inside the Generated Verilog drawer with 6 interactive construct chips (`assign`, `always @(*)`, `if/else`, `case`, `always @(posedge clk)`, and Blocking vs Nonblocking `= vs <=`). Added a style switcher enabling students to view synthesizable circuits in either Continuous Dataflow style (`assign`) or Procedural Behavioral style (`always @(*)`, `case`).  
+**Rationale**: Beginners frequently struggle with the duality between dataflow (`assign`) and procedural (`always`) Verilog. Grounding explanations in validated educational examples and standard cell mappings bridges visual schematic intuition to professional RTL design.
