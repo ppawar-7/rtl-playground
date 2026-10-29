@@ -15,7 +15,8 @@
     "test:stress": "node tests/stress/stress_runner.js",
     "test:all": "node tests/run_all_integrated_tests.js",
     "test:subpath": "node tests/github_pages_subpath_test.js",
-    "test:e2e": "node tests/cross_navigation_smoke_test.js"
+    "test:e2e": "node tests/cross_navigation_smoke_test.js",
+    "test:live": "node tests/live_website_audit.js"
   },
   "devDependencies": {
     "@veriflow/iverilog-wasm": "^0.1.4",
