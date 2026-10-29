@@ -1,9 +1,10 @@
 {
   "name": "rtl-playground",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interactive RTL Design Learning Platform",
   "type": "module",
   "scripts": {
+    "build": "node scripts/build_site.js",
     "test": "node tests/tests.js",
     "test:advanced": "node tests/advanced/run_all_tests.js",
     "test:yosys": "node tests/verilog_verification/run_yosys_verification.js",

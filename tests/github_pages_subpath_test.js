@@ -22,7 +22,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+const ROOT = process.env.SITE_ROOT ? resolve(process.env.SITE_ROOT) : resolve(__dirname, '..');
 const EDGE_PATH = resolveBrowserExecutable();
 
 const HTTP_PORT = 8096;

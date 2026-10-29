@@ -1,12 +1,13 @@
-# PD Playground — Full RTL Release Candidate Checklist
+# PD Playground — Full RTL Release v0.2.0 Checklist
 
-## 1. Release Candidate Metadata
+## 1. Release Metadata
 
 - **Platform Name**: PD Playground — Full RTL Educational Suite
-- **Release Version**: `v0.2.0-rc1` (Comprehensive RTL Baseline)
+- **Release Version**: `v0.2.0` (Promoted from verified `v0.2.0-rc1` baseline)
 - **Integration Branch**: `integrate/full-rtl-playground`
 - **Target Worktree**: `C:\Users\pranil\Documents\PD-Playground\rtl-playground-full`
-- **Commit SHA**: `26fac61` (and release checklist update)
+- **Remote Repository**: `https://github.com/ppawar-7/rtl-playground`
+- **Historical Release Candidate**: `v0.2.0-rc1` (commit `a5d3fb3`)
 - **Baseline Common Ancestor**: `f9c6d7b83a42ff62438e4013417cd18a38f59761`
 
 ---
@@ -29,6 +30,7 @@
 | **G-12** | **Extended Stress Test Memory Bounds** | 2-hour stress execution with explicit `process.memoryUsage()` tracking | 129,494 batches, 453,229 circuits, 1,338,342 cycles, 3.94MB heap delta, 0 leaks | 🟢 PASSED |
 | **G-13** | **GitHub Pages Subpath Deployment Audit** | Subpath `/rtl-playground/` hosting without root leakage | 42/42 requests valid, 0 root violations, 6/6 navigation steps | 🟢 PASSED |
 | **G-14** | **Security, Zero-Eval & Secret Audit** | Zero `eval`/`new Function`, zero leaked credentials, SVG entity escaping | 100% AST expression parser, 0 secrets, 0 hardcoded paths | 🟢 PASSED |
+| **G-15** | **Static Site Packaging & Deployment Gating** | Clean `_site/` artifact (31 files, 470KB) without test/dev files; strict atomic CI/CD gating | Verified portable lockfile, `npm ci`, and `_site` subpath audit | 🟢 PASSED |
 
 ---
 
@@ -64,5 +66,5 @@
 
 ## 5. Release Sign-Off Recommendation
 
-All 14 verification gates have **PASSED** with zero defects, zero regressions, and zero test failures.
-The codebase on branch `integrate/full-rtl-playground` is **APPROVED and READY for Standalone GitHub Publication (`v0.2.0-rc1`)**.
+All 15 verification gates have **PASSED** with zero defects, zero regressions, and zero test failures.
+The codebase on branch `integrate/full-rtl-playground` is **APPROVED and READY for Formal GitHub Release (`v0.2.0`)**.

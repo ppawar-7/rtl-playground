@@ -1,7 +1,7 @@
 # PD Playground — Known Limitations & Architectural Scope
 
 > **Document Purpose**: Explicitly define the educational modeling approximations, technical constraints, and operational boundaries of the PD Playground RTL educational platform.  
-> **Release Baseline**: `v0.2.0-rc1` (Branch: `integrate/full-rtl-playground`)  
+> **Release Baseline**: `v0.2.0` (Branch: `integrate/full-rtl-playground`)  
 > **Date**: October 29, 2026
 
 ---

@@ -3,8 +3,10 @@
 ## 1. Executive Status & Integration Baseline
 
 The PD Playground RTL platform has successfully completed the **Autonomous Full RTL Integration & Verification Closure** on branch `integrate/full-rtl-playground`:
-- **Active Release Candidate Baseline**: `v0.2.0-rc1` (Commit `2db00c9` + documentation commits)
+- **Active Release Baseline**: `v0.2.0` (Promoted from verified `v0.2.0-rc1` baseline)
 - **Dedicated Worktree Location**: `C:\Users\pranil\Documents\PD-Playground\rtl-playground-full`
+- **Remote Repository**: `https://github.com/ppawar-7/rtl-playground` (Branch `integrate/full-rtl-playground` tracks `origin/main`)
+- **Live Deployment**: `https://ppawar-7.github.io/rtl-playground/`
 - **Source Merges Formally Integrated**:
   1. `master` (`f9c6d7b`): Initial visual schematic editor, gates, half adder, truth tables, basic waveforms.
   2. `phase-6-interactive-rtl` (`1febb57`): First-class sequential registers (`DFFE`, `DFFSR`, `DFFESR`), dual-perspective Verilog generation (`assign` vs `always @(*)`, `case`), interactive Verilog explainer bar, 16 presets, 12 guided lessons.
@@ -88,7 +90,8 @@ The 2-hour long-duration stress test launched against baseline commit `f9c6d7b` 
    - Cross-navigation test: Port 8092 and CDP 9235.
    - Student journeys audit: Port 8094 and CDP 9238.
    - Always specify isolated ports to prevent `EADDRINUSE` conflicts.
-4. **Repository Boundaries**:
-   - Do NOT push to GitHub or merge directly into `master`.
-   - All release-ready engineering is committed locally on branch `integrate/full-rtl-playground` in `C:\Users\pranil\Documents\PD-Playground\rtl-playground-full`.
-   - `STA Playground` (`ppawar-7/sta-playground`) remains isolated and untouched.
+4. **Repository Boundaries & Workflows**:
+   - The standalone public repository is `https://github.com/ppawar-7/rtl-playground`.
+   - All commits are verified locally on branch `integrate/full-rtl-playground` before publication.
+   - GitHub Actions `deploy.yml` enforces atomic gating via static artifact packaging (`_site/`) and clean `npm ci`.
+   - `STA Playground` (`ppawar-7/sta-playground`) remains strictly isolated and untouched.

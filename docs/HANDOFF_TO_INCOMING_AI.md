@@ -1,7 +1,7 @@
 # PD Playground — Complete In-Repository AI-to-AI Handoff & Transfer Guide
 
 > **Target Audience**: Incoming AI Coding Agents, Human Collaborators, and Evaluators.  
-> **Release Baseline**: `v0.2.0-rc1` (Branch: `integrate/full-rtl-playground`)  
+> **Release Baseline**: `v0.2.0` (Branch: `integrate/full-rtl-playground`)  
 > **Verification Status**: 100% Passing (Consolidated Master Suite + 2-Hour Stress Harness Passed)  
 > **Date**: October 29, 2026
 

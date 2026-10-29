@@ -24,9 +24,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Install Verification Dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Build Static Site Packaging Artifact
+        run: npm run build
 
       - name: Run RTL Fundamentals Unit Tests
         run: npm test
@@ -53,7 +57,7 @@ jobs:
           fi
 
       - name: Run GitHub Pages Subpath Audit (/rtl-playground/)
-        run: npm run test:subpath
+        run: SITE_ROOT=_site npm run test:subpath
 
       - name: Run Cross-Platform Navigation Smoke Test
         run: npm run test:e2e

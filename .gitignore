@@ -10,13 +10,14 @@ Desktop.ini
 *.swo
 *~
 
-# Node (if used for testing)
+# Node
 node_modules/
-package-lock.json
+
+# Build and Packaging
+_site/
 
 # Temp
 *.tmp
 *.log
 
 tmp_cdp*
-

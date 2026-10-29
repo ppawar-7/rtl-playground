@@ -1,10 +1,12 @@
 # PD Playground — Development Progress
 
-## Current Status: Full RTL Autonomous Integration & Release Candidate Baseline (`integrate/full-rtl-playground`)
+## Current Status: Full RTL Autonomous Integration & Release Hardening (`integrate/full-rtl-playground`)
 
-**Milestone Reached**: `v0.2.0-rc1`  
+**Milestone Reached**: `v0.2.0` (Promoted from verified `v0.2.0-rc1` baseline)  
 **Dedicated Worktree**: `C:\Users\pranil\Documents\PD-Playground\rtl-playground-full`  
-**Last Updated**: 2026-10-29 01:25 EDT  
+**Remote Repository**: `https://github.com/ppawar-7/rtl-playground`  
+**Live Site**: `https://ppawar-7.github.io/rtl-playground/`  
+**Last Updated**: October 29, 2026  
 
 ---
 
@@ -89,13 +91,7 @@
 - [x] Inspected PID 22852: verified healthy execution (~50 minutes elapsed, 53,610 batches, 0 failures, 0 memory leaks). Preserved undisturbed.
 
 ### Stage 10: Release Candidate Documentation
-### Stage 12: Public GitHub Release & Live Verification Closure
-- [x] Provisioned standalone public repository `https://github.com/ppawar-7/rtl-playground`.
-- [x] Configured remote `origin` and published `integrate/full-rtl-playground` directly to remote `main`.
-- [x] Tagged and pushed Release Candidate `v0.2.0-rc1`.
-- [x] Automated GitHub Actions CI workflow passed 100% on Ubuntu runner (run 40930207450).
-- [x] Automated GitHub Pages deployment workflow passed and deployed site (run 40930207400).
-- [x] Live public website verified at `https://ppawar-7.github.io/rtl-playground/` with 0 uncaught page errors across all 24 lessons, ALU datapath, and FSM studio.
+- [x] Authored initial Release Candidate checklist and verification summary.
 
 ### Stage 11: Master RTL Hardening, Security Remediation & Release Finalization
 - [x] Security Hardening: Eliminated `new Function` in `fsm_engine.js`; implemented deterministic safe recursive-descent Boolean expression parser for FSM state transitions.
@@ -110,10 +106,20 @@
 - [x] Comprehensive Documentation Suite: Authored `docs/RTL_LEARNING_COVERAGE_MATRIX.md` (38 topics), `docs/KNOWN_LIMITATIONS.md`, and in-repository portable `docs/HANDOFF_TO_INCOMING_AI.md`.
 - [x] Updated platform navigation badges to `Curriculum (24)` across `index.html` and `advanced-lab/index.html`.
 - [x] 100% Verification closure across all 8 Advanced test suites and consolidated regression runners.
-### Stage 12: Public GitHub Release & Live Verification Closure
+
+### Stage 12: Public GitHub Release & Baseline Verification Closure
 - [x] Provisioned standalone public repository `https://github.com/ppawar-7/rtl-playground`.
 - [x] Configured remote `origin` and published `integrate/full-rtl-playground` directly to remote `main`.
-- [x] Tagged and pushed Release Candidate `v0.2.0-rc1`.
+- [x] Tagged and pushed Release Candidate `v0.2.0-rc1` (commit `a5d3fb3`).
 - [x] Automated GitHub Actions CI workflow passed 100% on Ubuntu runner (run 40930207450).
 - [x] Automated GitHub Pages deployment workflow passed and deployed site (run 40930207400).
 - [x] Live public website verified at `https://ppawar-7.github.io/rtl-playground/` with 0 uncaught page errors across all 24 lessons, ALU datapath, and FSM studio.
+
+### Stage 13: Release Hardening & Promotion to v0.2.0
+- [x] Stop ignoring `package-lock.json`, generate clean portable npm lockfile, and update workflows to `npm ci` with dependency caching.
+- [x] Reconcile `package.json` version `0.1.0` -> `0.2.0` across project metadata, documentation, and release notes.
+- [x] Build isolated static site deployment artifact (`scripts/build_site.js`) containing only runtime application assets in `_site/` (31 files, 470.6 KB), excluding all tests, docs, and dev clutter.
+- [x] Atomic deployment gating: Gated `deploy.yml` so that static packaging and Pages artifact upload are strictly conditioned upon 100% test pass on the same commit.
+- [x] Subpath validation: Verified GitHub Pages subpath `/rtl-playground/` against `_site/` with 42/42 valid requests and 0 root violations.
+- [x] Clarified README: Distinctly separated in-browser client simulation (100% pure vanilla JavaScript) from developer-side offline verification (YoWASP Yosys and Icarus Verilog WASM inside Node.js).
+- [x] Authored comprehensive `docs/RELEASE_NOTES_v0.2.0.md` detailing verified features, educational limits, and promotion path from `v0.2.0-rc1`.

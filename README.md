@@ -19,14 +19,16 @@
 The platform provides a continuous, tiered learning path from fundamental single-bit logic gates up to multi-bit vector datapaths, arithmetic logic units (ALUs), multi-bit registers, binary counters, universal shift registers, and deterministic Finite State Machines (Moore & Mealy architectures).
 
 ### Key Architectural Strengths
-- **Zero Framework / Zero Build Step**: 100% vanilla ES modules and static web standards. No bundlers or Node.js runtime required to run the student UI.
-- **Dual Verification Engines in WebAssembly**:
-  - **YoWASP Yosys**: Real-time IEEE 1364 Verilog AST parsing, hierarchy elaboration, and formal design rule checks (`@yowasp/yosys`).
-  - **Icarus Verilog WASM**: IEEE 1364 event-driven simulator compiling self-checking testbenches inside Node.js (`@veriflow/iverilog-wasm`).
-- **Bit-for-Bit Differential Verification**: Automated cycle-accurate equivalence suite verifying 106 differential vectors between browser JavaScript engines and compiled Verilog with 0 mismatches.
+- **Zero Framework / Zero Build Step**: 100% vanilla ES modules and static web standards. The interactive student UI runs directly in any modern browser without WebAssembly, native plugins, or a Node.js runtime.
+- **Client-Side Pure JavaScript Simulation**: Deterministic topological evaluation, multi-bit vector arithmetic, nonblocking sequential updates, and finite state machine transition logic executed in pure JavaScript in real time.
+- **Synthesizable Verilog HDL Export**: Real-time generation of standard IEEE 1364 Verilog modules with both continuous dataflow (`assign`) and procedural (`always @(*)`, `always @(posedge clk)`) paradigms.
+- **Developer & CI Verification Suite (Node.js + WebAssembly)**:
+  - **YoWASP Yosys (`@yowasp/yosys`)**: Offline Node.js verification toolchain executing real IEEE 1364 Verilog AST parsing, cell elaboration, and formal design rule checks on all exported designs.
+  - **Icarus Verilog WASM (`@veriflow/iverilog-wasm`)**: Headless IEEE 1364 compiler executing self-checking testbenches in Node.js to prove hardware validity.
+  - **Bit-for-Bit Differential Verification**: Automated cross-validation suite comparing 106 differential test vectors between client-side JavaScript engines and compiled Verilog simulations with 0 mismatches.
 - **Unified 24-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 12 multi-bit advanced challenges with automatic behavioral solution checking.
 - **Seamless Bi-Directional Platform Navigation**: Integrated platform switcher connecting RTL Fundamentals, Datapaths & ALU, Sequential Systems & Counters, and FSM Studio.
-- **Subpath Hosting Ready**: Verified for clean deployment on GitHub Pages (`/rtl-playground/`) with zero root leakage.
+- **Subpath Hosting Ready**: Automated static site packaging (`npm run build`) and subpath testing for clean deployment on GitHub Pages (`/rtl-playground/`) with zero root leakage.
 
 ---
 
@@ -34,7 +36,7 @@ The platform provides a continuous, tiered learning path from fundamental single
 
 ```mermaid
 flowchart TD
-    subgraph UI ["Unified Student User Interface"]
+    subgraph UI ["Unified Student User Interface (100% Client-Side Vanilla JS)"]
         TOPNAV["Top Platform Mode Switcher"]
         FUND["RTL Fundamentals\n(Visual Gate Netlist Canvas)"]
         DP["Datapath & ALU Visualizer\n(Multi-Bit Vectors & Carry Chains)"]
@@ -43,7 +45,7 @@ flowchart TD
         LESSONS["Unified Educational Curriculum\n(24 Guided Lessons)"]
     end
 
-    subgraph Engines ["Simulation & Hardware Models"]
+    subgraph Engines ["In-Browser Simulation Models (Pure JavaScript)"]
         CG["CircuitGraph & LogicSimulator\n(Topological & Cycle Detection)"]
         VM["VectorModel & VectorOps\n(1–64-Bit Bus Words)"]
         ARITH["ArithmeticEngine\n(Half/Full Adder, RCA, Educational ALU)"]
@@ -52,11 +54,11 @@ flowchart TD
         VERILOG["Synthesizable Verilog Generator\n(Continuous Assign & Procedural)"]
     end
 
-    subgraph Verification ["Hardware Equivalence & Quality Gates"]
-        YOSYS["Yosys AST & Synthesis Checks\n(17 Modules Elaborated)"]
+    subgraph Verification ["Developer & CI Verification Suite (Node.js & WASM)"]
+        YOSYS["YoWASP Yosys Synthesis\n(17 Modules Elaborated)"]
         IVERILOG["Icarus Verilog Simulation\n(17 Testbenches, 0 Errors)"]
         DIFF["Differential Verifier\n(106 Checks, 0 Mismatches)"]
-        E2E["CDP Browser Journeys A–F\n(Headless Automation)"]
+        E2E["Browser CDP Journeys A–F\n(Headless Edge/Chrome Automation)"]
     end
 
     TOPNAV --> FUND & DP & SEQ & FSM & LESSONS
@@ -135,11 +137,14 @@ flowchart TD
 
 ---
 
-## 5. Verification & Test Commands
+## 5. Verification & Build Commands
 
-Run all verification suites directly using Node.js:
+Run all verification suites and static site packaging directly using Node.js:
 
 ```bash
+# 0. Build Lean Static Site Artifact for GitHub Pages (_site/)
+npm run build
+
 # 1. Run Master Consolidated Integration Regression Suite
 npm run test:all
 
@@ -149,10 +154,10 @@ npm test
 # 3. Run Advanced RTL Lab Test Suite & Property Tests (8 suites, 5,470+ assertions)
 npm run test:advanced
 
-# 4. Run Real Yosys HDL Synthesis on All 17 Verilog Modules
+# 4. Run Real Yosys HDL Synthesis on All 17 Verilog Modules (Node.js WASM)
 npm run test:yosys
 
-# 5. Run Icarus Verilog Simulation on All 17 Testbenches
+# 5. Run Icarus Verilog Simulation on All 17 Testbenches (Node.js WASM)
 npm run test:iverilog
 
 # 6. Run Cross-Engine Differential Verification (106 checks)
@@ -181,7 +186,7 @@ npm run test:browser:advanced     # Advanced RTL Lab Audit
 - **GitHub Pages Subpath Audit**: 42 / 42 Requests Valid (0 root violations under `/rtl-playground/`)
 - **Cross-Platform Browser Audits**: 100% Passed across both portals (0 uncaught exceptions)
 - **Long-Duration Stress Harness (2 Hours)**: Formally completed full run (`run_20261029_003549`): 129,494 batches, 453,229 circuits generated, 1,338,342 simulation cycles, 0 failures, bounded heap (8.89 MB $\to$ 12.83 MB)
-- **Release Status**: **`v0.2.0-rc1` Verified & Approved**.
+- **Release Status**: **`v0.2.0` Ready for Release** (Promoted from verified `v0.2.0-rc1` baseline).
 
 ---
 
