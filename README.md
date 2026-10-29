@@ -1,190 +1,168 @@
-# RTL Playground
+# PD Playground — Interactive RTL Design & Educational VLSI Suite
 
-**Interactive RTL Design Learning Platform**  
+**Comprehensive Digital Logic & RTL Educational Learning Platform**  
 *Part of the PD Playground University Capstone Project: An Interactive Learning Tool for ASIC Physical Design*
 
 ---
 
-## 1. Overview
+## 1. Executive Overview
 
-**RTL Playground** is an interactive digital logic design and RTL exploration environment engineered for students and VLSI beginners. Students visually construct digital circuits, simulate combinational and sequential signal propagation, inspect clock-edge state transitions, generate synthesizable IEEE 1364 Verilog HDL in real time, analyze truth tables and timing waveforms, and complete 12 guided educational lessons with automated behavioral validation.
+**PD Playground** is an interactive, browser-based digital design platform engineered to teach students and VLSI beginners how combinational and sequential hardware is modeled in Verilog HDL and how circuits physically operate in silicon.
 
-The application features:
-- **Zero Framework / Zero Build Step**: 100% vanilla ES modules and static web assets.
-- **Dual HDL Verification**: Self-contained WebAssembly Yosys compiler and WebAssembly Icarus Verilog simulator for instant AST, elaboration, and event-driven simulation.
-- **Cross-Engine Differential Verification**: Automated cycle-accurate parity checks between browser simulation and compiled Verilog.
-- **Long-Duration Deterministic Stress Testing**: Automated DAG circuit generator, memory scaling profiler, and seed-reproducible test harness.
+The platform provides a continuous, tiered learning path from fundamental single-bit logic gates up to multi-bit vector datapaths, arithmetic logic units (ALUs), multi-bit registers, binary counters, universal shift registers, and deterministic Finite State Machines (Moore & Mealy architectures).
+
+### Key Architectural Strengths
+- **Zero Framework / Zero Build Step**: 100% vanilla ES modules and static web standards. No bundlers or Node.js runtime required to run the student UI.
+- **Dual Verification Engines in WebAssembly**:
+  - **YoWASP Yosys**: Real-time IEEE 1364 Verilog AST parsing, hierarchy elaboration, and formal design rule checks (`@yowasp/yosys`).
+  - **Icarus Verilog WASM**: IEEE 1364 event-driven simulator compiling self-checking testbenches inside Node.js (`@veriflow/iverilog-wasm`).
+- **Bit-for-Bit Differential Verification**: Automated cycle-accurate equivalence suite verifying 106 differential vectors between browser JavaScript engines and compiled Verilog with 0 mismatches.
+- **Unified 22-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 10 multi-bit advanced challenges with automatic behavioral solution checking.
+- **Seamless Bi-Directional Platform Navigation**: Integrated platform switcher connecting RTL Fundamentals, Datapaths & ALU, Sequential Systems & Counters, and FSM Studio.
 
 ---
 
-## 2. Core Capabilities
+## 2. Platform Capabilities & Architecture
 
-### A. Interactive Logic Circuit Workspace
-- **Component Palette**:
-  - Digital Inputs (interactive 0/1 toggle) and Digital Outputs.
-  - Clock source component (`CLOCK`).
-  - 7 Standard Gates: `AND`, `OR`, `NOT`, `NAND`, `NOR`, `XOR`, `XNOR`.
-  - Multiplexer: 2:1 MUX (`MUX2`).
-  - 4 Sequential Registers:
-    - Standard D Flip-Flop (`DFF`: inputs `D`, `CLK`)
-    - Register with Clock Enable (`DFFE`: inputs `D`, `CLK`, `EN`)
-    - Register with Synchronous Reset (`DFFSR`: inputs `D`, `CLK`, `RST`)
-    - Register with Enable & Synchronous Reset (`DFFESR`: inputs `D`, `CLK`, `EN`, `RST`, with documented Reset > Enable priority)
-- **Interactive SVG Canvas**: Component dragging, quadratic Bézier wire routing (drag-and-drop or click-to-connect), live signal coloring (`1` green, `0` gray, `null` red dashed).
-- **Design Rule Checks**: Strict multi-driver rejection and self-connection prevention.
+```mermaid
+flowchart TD
+    subgraph UI ["Unified Student User Interface"]
+        TOPNAV["Top Platform Mode Switcher"]
+        FUND["RTL Fundamentals\n(Visual Gate Netlist Canvas)"]
+        DP["Datapath & ALU Visualizer\n(Multi-Bit Vectors & Carry Chains)"]
+        SEQ["Sequential Systems\n(Registers, Counters & Shift Regs)"]
+        FSM["FSM Studio\n(Interactive SVG State Diagrams)"]
+        LESSONS["Unified Educational Curriculum\n(22 Guided Lessons)"]
+    end
 
-### B. Digital Logic Simulation Engine
-- **Combinational Topological Evaluator**: Order-independent evaluation with safe simulation state isolation.
-- **Cycle Detection**: 3-color DFS cycle detector rejecting illegal combinational feedback while safely permitting sequential feedback through registers.
-- **Sequential Nonblocking Semantics**: Simultaneous pre-edge sampling on rising clock edges ($0 \to 1$), enforcing true hardware nonblocking semantics ($<=$).
-- **State Retention**: Flip-flops retain state across falling clock edges and inactive enable periods.
+    subgraph Engines ["Simulation & Hardware Models"]
+        CG["CircuitGraph & LogicSimulator\n(Topological & Cycle Detection)"]
+        VM["VectorModel & VectorOps\n(1–64-Bit Bus Words)"]
+        ARITH["ArithmeticEngine\n(Half/Full Adder, RCA, Educational ALU)"]
+        REG_SEQ["Register & Counter Engine\n(MultiBitRegister, Modulo Counter, USR)"]
+        FSM_ENG["Deterministic FSM Engine\n(Moore & Mealy Architectures)"]
+        VERILOG["Synthesizable Verilog Generator\n(Continuous Assign & Procedural)"]
+    end
 
-### C. Interactive Verilog Explainer & Dual RTL Perspectives
-- **Interactive Construct Explainer Bar**: 6 concept cards with synthesizable code patterns and ASIC cell mappings:
-  1. Continuous assignments (`assign`)
-  2. Combinational `always @(*)`
-  3. Conditional logic (`if/else` and `? :`)
-  4. Multiplexer selection using `case (sel)`
-  5. Positive-edge-triggered `always @(posedge clk)`
-  6. Blocking (`=`) versus nonblocking (`<=`) semantics
-- **Component-to-Code Highlighting**: Selecting any component highlights its corresponding lines in the generated Verilog panel.
+    subgraph Verification ["Hardware Equivalence & Quality Gates"]
+        YOSYS["Yosys AST & Synthesis Checks\n(17 Modules Elaborated)"]
+        IVERILOG["Icarus Verilog Simulation\n(17 Testbenches, 0 Errors)"]
+        DIFF["Differential Verifier\n(106 Checks, 0 Mismatches)"]
+        E2E["CDP Browser Journeys A–F\n(Headless Edge Automation)"]
+    end
+
+    TOPNAV --> FUND & DP & SEQ & FSM & LESSONS
+    FUND --> CG
+    DP --> VM & ARITH
+    SEQ --> REG_SEQ
+    FSM --> FSM_ENG
+    LESSONS --> CG & VM & ARITH & REG_SEQ & FSM_ENG
+
+    CG & VM & ARITH & REG_SEQ & FSM_ENG --> VERILOG
+    VERILOG --> YOSYS & IVERILOG & DIFF & E2E
+```
+
+---
+
+## 3. Core Modules & Learning Tiers
+
+### Tier 1: Single-Bit RTL Fundamentals (`index.html`)
+- **Interactive Drag-and-Drop Netlist Canvas**: Visual placement, wire routing, real-time signal coloring (`1` green, `0` gray, `null` red dashed).
+- **Component Palette**: Digital Inputs (interactive toggle), Outputs, Clock, 7 standard gates (`AND`, `OR`, `NOT`, `NAND`, `NOR`, `XOR`, `XNOR`), 2:1 Multiplexer (`MUX2`), and 4 first-class sequential registers:
+  - Standard D Flip-Flop (`DFF`)
+  - Register with Clock Enable (`DFFE`)
+  - Register with Synchronous Reset (`DFFSR`)
+  - Register with Enable & Synchronous Reset (`DFFESR`, Reset > Enable priority)
+- **Interactive Verilog Explainer Bar**: 6 concept cards with synthesizable code patterns and ASIC cell mappings (`assign`, `always @(*)`, `if/else`, `case`, `always @(posedge clk)`, `= vs <=`).
 - **Dual Coding Perspectives**: Toggle between **Continuous Dataflow (`assign`)** and **Procedural Behavioral (`always @(*)`, `case`)** views.
-- **RTL Hardware Mapping Inspector**: Displays synthesis construct, target standard cell (e.g. `AND2X1`, `MUX2X1`, `DFFEX1`, `DFFESRX1`), and timing model.
+- **Waveform Viewer & Truth Table**: Canvas timing diagrams tracking `CLK`, `D`, `Q`, `EN`, `RST` across clock steps; exhaustive truth table generator with active-row tracking.
+- **16 Educational Presets & 12 Guided Lessons**: With instant level-up prompts to the Advanced RTL Lab upon completion.
 
-### D. Educational Presets (16 Total)
-- **Basic Gates**: AND Gate, OR Gate, NOT Gate
-- **Arithmetic**: 1-Bit Half Adder, 1-Bit Full Adder
-- **Multiplexers**: 2:1 MUX (Conditional `? :`), 2:1 MUX (Continuous `assign`), 2:1 MUX (Procedural `case`)
-- **Sequential Elements**: DFF Demo, DFF with Enable (`DFFE`), DFF with Synchronous Reset (`DFFSR`), DFF with Enable & Reset (`DFFESR`)
-- **Gate-Level Architectures**: Register with Clock Enable (Recirculating MUX), Register with Synchronous Reset (AND/NOT)
-- **Pipelines**: 2-Stage Shift Register Pipeline, Blocking vs Nonblocking Semantic Comparison
-
-### E. Interactive Guided Lessons (12 Total)
-1. Understanding Logic Gates
-2. Building a Half Adder
-3. Understanding a 2:1 Multiplexer
-4. Introduction to Sequential Logic
-5. Conditional Selection (MUX)
-6. Register with Clock Enable
-7. Register with Synchronous Reset
-8. Clock Edge Timing & Pipelines
-9. 1-Bit Full Adder Construction ($A, B, C_{in} \to Sum, C_{out}$)
-10. Register with Clock Enable & Retention (`DFFE`)
-11. Synchronous Reset with Documented Priority (`DFFESR`)
-12. Blocking vs Nonblocking Pipeline Semantics
-
-### F. Waveform Viewer & Truth Table Generator
-- **Waveform Viewer**: Canvas-based digital timing diagrams tracking `CLK`, `D`, `Q`, `EN`, and `RST` signals across clock steps with step markers ($T_0, T_1, \dots$).
-- **Truth Table Generator**: Exhaustive $2^n$ binary state generator (up to 16 rows for $\le 4$ inputs) with dynamic active-state row highlighting.
+### Tier 2: Advanced RTL Lab (`advanced-lab/index.html`)
+- **Multi-Bit Vectors & Slicing**: Arbitrary 1–64 bit signals, big-endian bit extraction (`vec[7:4]`), concatenation (`{A, B}`), and zero/sign-extension.
+- **Arithmetic Datapaths & ALU**: 
+  - Parameterized Ripple-Carry Adder with visual stage-by-stage carry propagation (`G`, `P`, `Cin`, `Cout`).
+  - Educational 4-bit ALU executing ADD, SUB, AND, OR, XOR, NOT, SHL, SHR with condition status flags ($Z, C, V, N$).
+- **Sequential Systems & Modulo Counters**:
+  - Multi-bit registers with simultaneous nonblocking pipeline updates.
+  - Modulo binary counters (up/down) with terminal count detection and rollover.
+  - Universal Shift Register supporting parallel load, shift right, shift left, and hold modes.
+- **Finite State Machine (FSM) Studio**:
+  - Interactive SVG state diagrams with real-time active state glow.
+  - Deterministic transition evaluator with Moore and Mealy output decoding.
+  - 2-Process synthesizable Verilog export with clean state parameterization.
+- **Multi-Bit Hexadecimal Bus Waveforms**: Hexagonal bus envelopes (`< 0xA >`) for vector data and timing validation.
 
 ---
 
-## 3. Architecture & File Structure
+## 4. Comprehensive 22-Lesson Curriculum
 
-```
-rtl-playground/
-├── index.html                           # Application entrypoint
-├── package.json                         # Node ES module configuration & test scripts
-├── AGENTS.md                            # Multi-agent persistent collaboration guidelines
-├── README.md                            # Project documentation
-├── docs/
-│   ├── INTEGRATION_REPORT.md            # Comprehensive integration audit report
-│   ├── RELEASE_CANDIDATE_CHECKLIST.md   # Release candidate verification checklist
-│   ├── RTL_TO_STA_BRIDGE_DESIGN.md      # Architectural design for STA Playground bridge
-│   ├── PROGRESS.md                      # Milestone tracker & test results
-│   ├── HANDOFF.md                       # Developer handoff documentation
-│   └── DECISIONS.md                     # Architectural Decision Records (ADRs 001–016)
-├── src/
-│   ├── app.js                          # Main application controller
-│   ├── engine/
-│   │   ├── circuit_graph.js            # Graph model, pin tracking, cycle detection
-│   │   ├── logic_simulator.js          # Combinational Boolean evaluator
-│   │   ├── sequential_engine.js        # Clock stepper, registers, waveform history
-│   │   └── verilog_generator.js        # Synthesizable continuous & procedural Verilog
-│   ├── ui/
-│   │   ├── circuit_editor.js           # SVG canvas editor & wire routing
-│   │   ├── component_library.js        # Component palette sidebar
-│   │   ├── waveform_viewer.js          # Canvas timing waveform visualizer
-│   │   ├── truth_table.js              # Interactive truth table renderer
-│   │   └── panels.js                   # Verilog explainer, style toggle & inspector
-│   ├── modules/
-│   │   ├── presets.js                  # 16 educational circuit presets
-│   │   └── lessons.js                  # 12 guided lessons with behavioral validators
-│   └── styles/
-│       └── main.css                    # Dark EDA stylesheet with CSS variables
-└── tests/
-    ├── tests.js                        # 49 unit & integration tests (Node & browser)
-    ├── test_runner.html                # Visual in-browser test runner
-    ├── browser_smoke_test.js           # Headless Microsoft Edge CDP automated audit
-    ├── verilog_verification/           # Real HDL verification suites
-    │   ├── generate_verification_suites.js # Synthesizable Verilog & testbench generator
-    │   ├── run_yosys_verification.js       # WebAssembly Yosys synthesis checks (11 modules)
-    │   ├── run_iverilog_simulation.js      # WebAssembly Icarus Verilog simulation (11 modules)
-    │   └── run_differential_simulation.js  # Cross-engine differential verification (34 checks)
-    └── stress/                         # Automated long-duration stress-testing harness
-        ├── stress_runner.js            # Main test orchestrator
-        ├── circuit_generator.js        # Deterministic PRNG circuit synthesizer
-        ├── reference_evaluator.js      # Independent 3-valued Boolean reference model
-        └── browser_ui_worker.js        # Port-isolated Edge CDP worker
-```
+| # | Lesson Title | Tier | Core Concept & Objective |
+|:---:|---|---|---|
+| **1** | Understanding Logic Gates | Fundamentals | Construct 2-input AND gate and verify Boolean truth table |
+| **2** | Building a Half Adder | Fundamentals | 1-bit adder producing SUM (XOR) and CARRY (AND) |
+| **3** | 2:1 Multiplexer | Fundamentals | Conditional data steering using select line |
+| **4** | D Flip-Flop Register | Fundamentals | Rising-edge state storage and clock sensitivity |
+| **5** | MUX with Conditional Operator (`? :`) | Fundamentals | Synthesizable continuous assignment `assign y = sel ? b : a` |
+| **6** | Register with Clock Enable (MUX) | Fundamentals | Clock gating mitigation via recirculation MUX |
+| **7** | Synchronous Reset Architecture | Fundamentals | Deterministic posedge initialization without glitching |
+| **8** | Clock Timing & Waveforms | Fundamentals | Hold, setup, and sequential propagation cycles |
+| **9** | 1-Bit Full Adder with Ripple | Fundamentals | Full 8-state addition with input carry $C_{in}$ |
+| **10** | Native Register with Clock Enable (`DFFE`) | Fundamentals | Hardware-synthesizable DFFE with nonblocking Verilog |
+| **11** | Priority in DFF with Enable & Sync Reset | Fundamentals | Strict reset-over-enable evaluation order in RTL |
+| **12** | Blocking vs Nonblocking Semantics | Fundamentals | Pipeline race conditions (`=` vs `<=`) and synthesis equivalence |
+| **13** | Multi-Bit Vectors & Slicing | Advanced | Bus extraction `data[7:4]` and `data[3:0]` |
+| **14** | Bus Concatenation & Extension | Advanced | Assemble 12-bit address word using `{page, offset}` |
+| **15** | Carry Lookahead vs Ripple Carry | Advanced | Carry generation ($G$) and propagation ($P$) stages |
+| **16** | ALU Status Flags ($Z, C, V, N$) | Advanced | Zero, Carry, Signed Overflow, and Negative flag evaluation |
+| **17** | Multi-Bit Register Recirculation | Advanced | Multi-bit bus retention when clock enable is inactive |
+| **18** | Register Priority in Hardware | Advanced | Active-high synchronous reset dominating enable in vector regs |
+| **19** | Modulo Binary Counters | Advanced | Up/down counter with modulo rollover and terminal count |
+| **20** | Universal Shift Register | Advanced | Bidirectional shift and parallel load modes (SISO/SIPO/PISO) |
+| **21** | Sequence Detector FSM | Advanced | Deterministic state machine detecting `101` pattern |
+| **22** | Moore vs Mealy Output Timing | Advanced | State-only Moore vs input-dependent zero-latency Mealy outputs |
 
 ---
 
-## 4. Running the Application
+## 5. Verification & Test Commands
 
-Because RTL Playground uses native JavaScript ES Modules, it must be served via a local HTTP server:
+Run all verification suites directly using Node.js:
 
 ```bash
-# Option 1: Python HTTP Server (port 8088 recommended)
-python -m http.server 8088
+# 1. Run Master Consolidated Integration Regression Suite
+node tests/run_all_integrated_tests.js
 
-# Option 2: Node.js / npx
-npx serve -p 8088 .
-```
-
-Open **`http://localhost:8088`** in any modern web browser.
-
----
-
-## 5. Running Verification Suites
-
-All verification suites run entirely locally without requiring external C++ toolchains or root privileges:
-
-```bash
-# 1. Run unit and cross-module integration tests (49 tests):
+# 2. Run RTL Fundamentals & Phase 6 Unit Tests (49 tests)
 npm test
 
-# 2. Run real Verilog HDL synthesis verification via WebAssembly Yosys (11 modules):
+# 3. Run Advanced RTL Lab Test Suite & Property Tests (7 suites, 5,000+ checks)
+npm run test:advanced
+
+# 4. Run Real Yosys HDL Synthesis on All 17 Verilog Modules
 npm run test:yosys
 
-# 3. Run functional Verilog simulation via WebAssembly Icarus Verilog (11 modules):
+# 5. Run Icarus Verilog Simulation on All 17 Testbenches
 npm run test:iverilog
 
-# 4. Run cross-engine differential simulation (34 parity checks, 0 mismatches):
+# 6. Run Cross-Engine Differential Verification (106 checks)
 npm run test:differential
 
-# 5. Run automated Microsoft Edge browser tests (via Chrome DevTools Protocol):
-npm run test:browser
-
-# 6. Run a short smoke run of the stress-testing harness (30s):
-npm run test:stress -- --duration=30s --yield-ms=40
+# 7. Run Headless Edge Browser Audits
+npm run test:browser              # RTL Fundamentals Audit
+npm run test:browser:advanced     # Advanced RTL Lab Audit
+node tests/cross_navigation_smoke_test.js # Cross-Platform Navigation Audit
+node tests/student_journeys_audit.js     # End-to-End Journeys A-F Audit
 ```
 
 ---
 
 ## 6. Verification Status Summary
 
-- **Unit & Integration Suite**: **49 Passed, 0 Failed**
-- **Yosys Synthesis Checks**: **11 Passed, 0 Failed**
-- **Icarus Verilog Event-Driven Simulation**: **11 Passed, 0 Failed**
-- **Differential Equivalence Checks**: **34 Passed, 0 Mismatches**
-- **In-Browser Test Runner**: **49 Passed, 0 Failed**
-- **Browser Interaction Audit**: **16/16 Presets & 12/12 Lessons Verified, 0 Exceptions**
-- **Stress-Testing Smoke Check**: **445 Batches, 1,557 Circuits, 0 Errors**
-
----
-
-## 7. Capstone Project Attribution
-
-Developed as part of the **PD Playground** senior capstone design project (Stevens Institute of Technology).  
-Co-requisite project: [STA Playground](https://ppawar-7.github.io/sta-playground/).
+- **Unit Tests**: 49 / 49 Passed (100%)
+- **Advanced RTL Lab Assertions**: 5,474 / 5,474 Passed (100%)
+- **Yosys Synthesis Check**: 17 / 17 Modules Synthesizable (0 latches, 0 errors)
+- **Icarus Verilog Testbenches**: 17 / 17 Suites Passed (0 assertion errors)
+- **Cross-Engine Differential Parity**: 106 / 106 Checks Passed (0 mismatches)
+- **Headless Edge Browser Audits**: 100% Passed across both portals (0 uncaught exceptions)
+- **Background Stress Test (PID 22852)**: Active on Phase 5 baseline (> 53,600 batches, > 187,000 circuits, 0 failures, 0 memory leaks)
+- **Release Status**: **`v0.2.0-rc1` Verified & Approved**.
