@@ -1,3 +1,4 @@
+import { resolveBrowserExecutable } from '../browser_resolver.js';
 /**
  * browser_advanced_test.js — Native Headless Edge CDP Automated Browser Test Runner
  * 
@@ -23,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const EDGE_PATH = resolveBrowserExecutable();
 
 const HTTP_PORT = 8089;
 const CDP_PORT = 9229;

@@ -1,3 +1,4 @@
+import { resolveBrowserExecutable } from './browser_resolver.js';
 /**
  * cross_navigation_smoke_test.js — End-to-End Cross-Platform Navigation Test
  * 
@@ -20,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const EDGE_PATH = resolveBrowserExecutable();
 
 const HTTP_PORT = 8092;
 const CDP_PORT = 9235;

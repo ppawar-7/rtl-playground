@@ -1,3 +1,4 @@
+import { resolveBrowserExecutable } from '../browser_resolver.js';
 /**
  * browser_ui_worker.js — Repeated Headless Browser Smoke & UI Interaction Worker
  * 
@@ -14,7 +15,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const EDGE_PATH = resolveBrowserExecutable();
 const CDP_PORT = parseInt(process.env.STRESS_CDP_PORT || '9333', 10);
 const HTTP_PORT = parseInt(process.env.STRESS_HTTP_PORT || '8181', 10);
 

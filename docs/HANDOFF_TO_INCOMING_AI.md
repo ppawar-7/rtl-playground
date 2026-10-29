@@ -23,13 +23,15 @@ PD Playground is an educational RTL and digital logic platform providing interac
 - Active Local Web Server: Running on http://localhost:8085/ (served via `node server.js`)
 - Primary Documentation to read first:
   1. AGENTS.md
-  2. docs/HANDOFF.md
-  3. docs/PROGRESS.md
-  4. docs/RTL_LEARNING_COVERAGE_MATRIX.md
-  5. docs/KNOWN_LIMITATIONS.md
-  6. docs/FULL_RTL_INTEGRATION_REPORT.md
-  7. docs/FULL_RTL_VERIFICATION_REPORT.md
-  8. docs/RTL_TO_STA_BRIDGE_DESIGN.md
+  2. docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md
+  3. docs/TEST_COVERAGE_TRACEABILITY.md
+  4. docs/HANDOFF.md
+  5. docs/PROGRESS.md
+  6. docs/RTL_LEARNING_COVERAGE_MATRIX.md
+  7. docs/KNOWN_LIMITATIONS.md
+  8. docs/FULL_RTL_INTEGRATION_REPORT.md
+  9. docs/FULL_RTL_VERIFICATION_REPORT.md
+  10. docs/RTL_TO_STA_BRIDGE_DESIGN.md
 
 ### Critical Constraints
 1. NEVER push anything to remote GitHub repositories.

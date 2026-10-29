@@ -1,0 +1,63 @@
+name: CI Verification
+
+on:
+  push:
+    branches: [ main, master, integrate/* ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: RTL & Hardware Verification Suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Verification Dependencies
+        run: npm install
+
+      - name: Run RTL Fundamentals Unit Tests
+        run: npm test
+
+      - name: Run Advanced RTL Lab Unit & Property Tests
+        run: npm run test:advanced
+
+      - name: Run YoWASP Yosys Synthesis Checks (17 Modules)
+        run: npm run test:yosys
+
+      - name: Run Icarus Verilog WASM Simulations (17 Suites)
+        run: npm run test:iverilog
+
+      - name: Run Cross-Engine Differential Verification (106 Checks)
+        run: npm run test:differential
+
+      - name: Run Master Consolidated Integration Runner
+        run: npm run test:all
+
+      - name: Setup Chromium for Browser E2E Tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      - name: Run GitHub Pages Subpath Audit (/rtl-playground/)
+        env:
+          BROWSER_PATH: /usr/bin/chromium-browser
+        run: npm run test:subpath
+
+      - name: Run Cross-Platform Navigation Smoke Test
+        env:
+          BROWSER_PATH: /usr/bin/chromium-browser
+        run: npm run test:e2e

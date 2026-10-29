@@ -1,3 +1,4 @@
+import { resolveBrowserExecutable } from './browser_resolver.js';
 /**
  * github_pages_subpath_test.js — Automated GitHub Pages Subdirectory Hosting Verification
  * 
@@ -22,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const EDGE_PATH = resolveBrowserExecutable();
 
 const HTTP_PORT = 8096;
 const CDP_PORT = 9239;

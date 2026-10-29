@@ -1,7 +1,14 @@
 # PD Playground — Interactive RTL Design & Educational VLSI Suite
 
+[![CI Verification](https://github.com/ppawar-7/rtl-playground/actions/workflows/ci.yml/badge.svg)](https://github.com/ppawar-7/rtl-playground/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub Pages](https://img.shields.io/badge/Hosted%20on-GitHub%20Pages-success)](https://ppawar-7.github.io/rtl-playground/)
+
 **Comprehensive Digital Logic & RTL Educational Learning Platform**  
 *Part of the PD Playground University Capstone Project: An Interactive Learning Tool for ASIC Physical Design*
+
+- **Live Application**: [https://ppawar-7.github.io/rtl-playground/](https://ppawar-7.github.io/rtl-playground/)
+- **Companion STA Playground**: [https://ppawar-7.github.io/sta-playground/](https://ppawar-7.github.io/sta-playground/)
 
 ---
 
@@ -17,8 +24,9 @@ The platform provides a continuous, tiered learning path from fundamental single
   - **YoWASP Yosys**: Real-time IEEE 1364 Verilog AST parsing, hierarchy elaboration, and formal design rule checks (`@yowasp/yosys`).
   - **Icarus Verilog WASM**: IEEE 1364 event-driven simulator compiling self-checking testbenches inside Node.js (`@veriflow/iverilog-wasm`).
 - **Bit-for-Bit Differential Verification**: Automated cycle-accurate equivalence suite verifying 106 differential vectors between browser JavaScript engines and compiled Verilog with 0 mismatches.
-- **Unified 24-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 10 multi-bit advanced challenges with automatic behavioral solution checking.
+- **Unified 24-Lesson Progressive Curriculum**: 12 single-bit fundamental exercises and 12 multi-bit advanced challenges with automatic behavioral solution checking.
 - **Seamless Bi-Directional Platform Navigation**: Integrated platform switcher connecting RTL Fundamentals, Datapaths & ALU, Sequential Systems & Counters, and FSM Studio.
+- **Subpath Hosting Ready**: Verified for clean deployment on GitHub Pages (`/rtl-playground/`) with zero root leakage.
 
 ---
 
@@ -48,7 +56,7 @@ flowchart TD
         YOSYS["Yosys AST & Synthesis Checks\n(17 Modules Elaborated)"]
         IVERILOG["Icarus Verilog Simulation\n(17 Testbenches, 0 Errors)"]
         DIFF["Differential Verifier\n(106 Checks, 0 Mismatches)"]
-        E2E["CDP Browser Journeys A–F\n(Headless Edge Automation)"]
+        E2E["CDP Browser Journeys A–F\n(Headless Automation)"]
     end
 
     TOPNAV --> FUND & DP & SEQ & FSM & LESSONS
@@ -91,6 +99,7 @@ flowchart TD
   - Interactive SVG state diagrams with real-time active state glow.
   - Deterministic transition evaluator with Moore and Mealy output decoding.
   - 2-Process synthesizable Verilog export with clean state parameterization.
+  - AST Boolean condition parser with zero `eval()`.
 - **Multi-Bit Hexadecimal Bus Waveforms**: Hexagonal bus envelopes (`< 0xA >`) for vector data and timing validation.
 
 ---
@@ -132,12 +141,12 @@ Run all verification suites directly using Node.js:
 
 ```bash
 # 1. Run Master Consolidated Integration Regression Suite
-node tests/run_all_integrated_tests.js
+npm run test:all
 
 # 2. Run RTL Fundamentals & Phase 6 Unit Tests (49 tests)
 npm test
 
-# 3. Run Advanced RTL Lab Test Suite & Property Tests (7 suites, 5,000+ checks)
+# 3. Run Advanced RTL Lab Test Suite & Property Tests (8 suites, 5,470+ assertions)
 npm run test:advanced
 
 # 4. Run Real Yosys HDL Synthesis on All 17 Verilog Modules
@@ -149,11 +158,15 @@ npm run test:iverilog
 # 6. Run Cross-Engine Differential Verification (106 checks)
 npm run test:differential
 
-# 7. Run Headless Edge Browser Audits
+# 7. Run GitHub Pages Subpath Audit (/rtl-playground/)
+npm run test:subpath
+
+# 8. Run Cross-Platform Navigation & Deep-Link Audit
+npm run test:e2e
+
+# 9. Run Headless Browser UI Audits
 npm run test:browser              # RTL Fundamentals Audit
 npm run test:browser:advanced     # Advanced RTL Lab Audit
-node tests/cross_navigation_smoke_test.js # Cross-Platform Navigation Audit
-node tests/student_journeys_audit.js     # End-to-End Journeys A-F Audit
 ```
 
 ---
@@ -165,18 +178,28 @@ node tests/student_journeys_audit.js     # End-to-End Journeys A-F Audit
 - **Yosys Synthesis Check**: 17 / 17 Modules Synthesizable (0 latches, 0 errors)
 - **Icarus Verilog Testbenches**: 17 / 17 Suites Passed (0 assertion errors)
 - **Cross-Engine Differential Parity**: 106 / 106 Checks Passed (0 mismatches)
-- **Headless Edge Browser Audits**: 100% Passed across both portals (0 uncaught exceptions)
-- **Long-Duration Stress Harness (2 Hours)**: Formally completed full run (`run_20261029_003549`): 129,494 batches, 453,229 circuits generated, 1,338,342 simulation cycles, 0 failures, 0 memory leaks
+- **GitHub Pages Subpath Audit**: 42 / 42 Requests Valid (0 root violations under `/rtl-playground/`)
+- **Cross-Platform Browser Audits**: 100% Passed across both portals (0 uncaught exceptions)
+- **Long-Duration Stress Harness (2 Hours)**: Formally completed full run (`run_20261029_003549`): 129,494 batches, 453,229 circuits generated, 1,338,342 simulation cycles, 0 failures, bounded heap (8.89 MB $\to$ 12.83 MB)
 - **Release Status**: **`v0.2.0-rc1` Verified & Approved**.
 
 ---
 
-## 7. Documentation Matrix
+## 7. Deep Architecture & Technical Documentation
 
-- [RTL Learning Coverage Matrix (38 Topics)](docs/RTL_LEARNING_COVERAGE_MATRIX.md)
+- [System Architecture Deep Dive](docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md)
+- [Test Coverage & Hardware Traceability Matrix](docs/TEST_COVERAGE_TRACEABILITY.md)
+- [RTL Learning Coverage Matrix (46 Topics Reconciled)](docs/RTL_LEARNING_COVERAGE_MATRIX.md)
 - [Known Limitations & Modeling Approximations](docs/KNOWN_LIMITATIONS.md)
 - [In-Repository AI Handoff & Transfer Guide](docs/HANDOFF_TO_INCOMING_AI.md)
+- [Full RTL Release Checklist (14 Verified Quality Gates)](docs/FULL_RTL_RELEASE_CHECKLIST.md)
 - [Full RTL Integration Report](docs/FULL_RTL_INTEGRATION_REPORT.md)
 - [Full RTL Verification Report](docs/FULL_RTL_VERIFICATION_REPORT.md)
-- [Full RTL Release Checklist](docs/FULL_RTL_RELEASE_CHECKLIST.md)
 - [Phase 7 RTL-to-STA Bridge Architecture Design](docs/RTL_TO_STA_BRIDGE_DESIGN.md)
+
+---
+
+## 8. License
+
+This project is licensed under the [MIT License](LICENSE).
+Part of the PD Playground project by Pranil Pawar (`ppawar-7`).

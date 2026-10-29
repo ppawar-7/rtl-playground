@@ -96,6 +96,11 @@
 
 ### Stage 11: Master RTL Hardening, Security Remediation & Release Finalization
 - [x] Security Hardening: Eliminated `new Function` in `fsm_engine.js`; implemented deterministic safe recursive-descent Boolean expression parser for FSM state transitions.
+- [x] Architecture Deep Dive: Authored `docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md` explaining single-bit netlist vs multi-bit datapath models and 4 execution traces.
+- [x] Test Coverage Traceability: Authored `docs/TEST_COVERAGE_TRACEABILITY.md` mapping hardware behaviors to concrete tests and independent oracles.
+- [x] Cross-Platform CI Hardening: Implemented dynamic `tests/browser_resolver.js` to support Windows, Linux Ubuntu, and macOS in E2E browser tests.
+- [x] Open-Source Repository Preparation: Created MIT `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and updated `README.md`.
+- [x] GitHub Actions Automation: Configured `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` for automated CI and GitHub Pages deployment.
 - [x] SVG Entity Sanitization: Neutralized potential injection payloads in `circuit_editor.js` with XML escaping.
 - [x] Curriculum Expansion: Extended curriculum from 22 to 24 lessons with Lesson 23 (*Combinational Latch Inference & Synthesis Rules*) and Lesson 24 (*Self-Checking Verilog Testbenches & Simulation Assertions*).
 - [x] Stress Test Evidence Consolidation: Mirrored completed 2-hour stress testing records (`run_20261029_003549`: 129,494 batches, 453,229 circuits, 0 failures, 0 memory leaks) into release repository.

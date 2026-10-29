@@ -1,3 +1,4 @@
+import { resolveBrowserExecutable } from './browser_resolver.js';
 /**
  * browser_smoke_test.js — Native Chrome DevTools Protocol (CDP) Browser Test Runner
  * 
@@ -51,7 +52,7 @@ function startStaticServer(port = 8088) {
     });
 }
 
-const EDGE_PATH = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const EDGE_PATH = resolveBrowserExecutable();
 const PORT = 9222;
 const HTTP_PORT = 8088;
 const BASE_URL = `http://localhost:${HTTP_PORT}`;
