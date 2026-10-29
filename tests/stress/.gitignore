@@ -1,0 +1,2 @@
+# Exclude generated stress testing reports and logs
+reports/
