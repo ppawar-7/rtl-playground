@@ -1,0 +1,9 @@
+{
+  "name": "rtl-playground",
+  "version": "0.1.0",
+  "description": "Interactive RTL Design Learning Platform",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/tests.js"
+  }
+}
