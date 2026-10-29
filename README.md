@@ -196,6 +196,7 @@ npm run test:browser:advanced     # Advanced RTL Lab Audit
 - [Full RTL Integration Report](docs/FULL_RTL_INTEGRATION_REPORT.md)
 - [Full RTL Verification Report](docs/FULL_RTL_VERIFICATION_REPORT.md)
 - [Phase 7 RTL-to-STA Bridge Architecture Design](docs/RTL_TO_STA_BRIDGE_DESIGN.md)
+- [Unified Engineering Roadmap (Phases 7–10)](docs/ENGINEERING_ROADMAP.md)
 
 ---
 

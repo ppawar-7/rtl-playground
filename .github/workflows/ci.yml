@@ -47,17 +47,14 @@ jobs:
       - name: Run Master Consolidated Integration Runner
         run: npm run test:all
 
-      - name: Setup Chromium for Browser E2E Tests
+      - name: Ensure Browser Available for E2E Tests
         run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
+          if ! command -v google-chrome &> /dev/null && ! command -v chromium &> /dev/null && ! command -v chromium-browser &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y chromium-browser
+          fi
 
       - name: Run GitHub Pages Subpath Audit (/rtl-playground/)
-        env:
-          BROWSER_PATH: /usr/bin/chromium-browser
         run: npm run test:subpath
 
       - name: Run Cross-Platform Navigation Smoke Test
-        env:
-          BROWSER_PATH: /usr/bin/chromium-browser
         run: npm run test:e2e
