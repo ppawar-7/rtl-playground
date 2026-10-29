@@ -5,5 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node tests/tests.js"
+  },
+  "devDependencies": {
+    "@yowasp/yosys": "^0.71.188-dev.1267"
   }
 }

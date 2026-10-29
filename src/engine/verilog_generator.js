@@ -275,26 +275,14 @@ export class VerilogGenerator {
 
     /**
      * Find internal signals (gates not directly connected to I/O).
+     * Since expressions are currently inlined directly into output assignments,
+     * intermediate wire declarations are omitted to avoid unused net warnings.
      * @private
      */
     _getInternalSignals(inputs, outputs, clocks, dffs) {
-        const ioIds = new Set([
-            ...inputs.map(c => c.id),
-            ...outputs.map(c => c.id),
-            ...clocks.map(c => c.id),
-            ...dffs.map(c => c.id)
-        ]);
-
-        const wires = [];
-        for (const comp of this.graph.components.values()) {
-            if (!ioIds.has(comp.id) && comp.outputs.length > 0) {
-                wires.push({
-                    id: comp.id,
-                    name: `w_${this._sanitizeName(comp.label)}_${comp.id.split('_').pop()}`
-                });
-            }
-        }
-        return wires;
+        // Expressions are inlined directly into assign and always statements.
+        // Return empty array to avoid generating unused wire declarations.
+        return [];
     }
 
     /**

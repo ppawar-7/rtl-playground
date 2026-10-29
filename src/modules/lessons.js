@@ -285,6 +285,363 @@ export const LESSONS = [
                 message: '🎉 Great job exploring sequential logic! Check the Waveform tab to see how Q updates strictly aligned with rising clock edges.'
             };
         }
+    },
+
+    {
+        id: 'lesson-5-mux-cond',
+        title: '5. Conditional Selection (MUX)',
+        difficulty: 'intermediate',
+        description: 'Implement data selection logic mapping to the RTL ternary operator assign y = sel ? b : a.',
+        objective: 'Route input A when Sel=0 and input B when Sel=1 to output Y.',
+        explanation: `
+            Multiplexers are the hardware manifestation of conditional execution.
+            In synthesizable Verilog, this is written as continuous assignment <code>assign y = sel ? b : a;</code> or procedural <code>if/else</code>.
+            When <strong>Sel is 0</strong>, path A is selected. When <strong>Sel is 1</strong>, path B is selected.
+        `,
+        task: 'Connect inputs A and B to the data pins of the 2:1 MUX, connect Sel to the select pin (bottom), and route the output to Y. Verify across all 8 truth table combinations.',
+        starterCircuit: {
+            components: [
+                { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 70, value: 0 },
+                { id: 'inp_b', type: 'INPUT', label: 'B', x: 80, y: 150, value: 1 },
+                { id: 'inp_sel', type: 'INPUT', label: 'Sel', x: 180, y: 240, value: 0 },
+                { id: 'mux_1', type: 'MUX2', label: 'MUX', x: 280, y: 110 },
+                { id: 'out_y', type: 'OUTPUT', label: 'Y', x: 460, y: 110 }
+            ],
+            connections: []
+        },
+        validate: (graph, simulator) => {
+            const inputs = graph.getInputComponents();
+            const outputs = graph.getOutputComponents();
+
+            if (inputs.length < 3) {
+                return { pass: false, message: 'Circuit requires 3 inputs: A, B, and Sel.' };
+            }
+            if (outputs.length < 1) {
+                return { pass: false, message: 'Circuit requires an Output component Y.' };
+            }
+
+            const inA = inputs.find(i => i.label.toUpperCase() === 'A') || inputs[0];
+            const inB = inputs.find(i => i.label.toUpperCase() === 'B') || inputs[1];
+            const inSel = inputs.find(i => i.label.toUpperCase().includes('SEL')) || inputs[2];
+            const outY = outputs[0];
+
+            for (let a = 0; a <= 1; a++) {
+                for (let b = 0; b <= 1; b++) {
+                    for (let s = 0; s <= 1; s++) {
+                        const expected = s === 0 ? a : b;
+                        const res = simulator.evaluateWithInputs({
+                            [inA.id]: a,
+                            [inB.id]: b,
+                            [inSel.id]: s
+                        });
+                        if (!res.ok) {
+                            return { pass: false, message: `Evaluation failed: ${res.error}` };
+                        }
+                        const actual = res.outputs[outY.id];
+                        if (actual !== expected) {
+                            return {
+                                pass: false,
+                                message: `Mismatch when Sel=${s}, A=${a}, B=${b}: Expected Y=${expected}, got ${actual !== null ? actual : '?'}.`
+                            };
+                        }
+                    }
+                }
+            }
+
+            return {
+                pass: true,
+                message: '🎉 Excellent! Conditional data selection verified across all 8 combinations. Check the Generated Verilog tab to see assign y = sel ? b : a.'
+            };
+        }
+    },
+
+    {
+        id: 'lesson-6-reg-enable',
+        title: '6. Register with Clock Enable',
+        difficulty: 'advanced',
+        description: 'Construct a clock-enabled DFF using the ASIC recirculating data MUX architecture.',
+        objective: 'Build a register where Q only loads D when EN=1 on rising clock edge; when EN=0, Q recirculates and holds.',
+        explanation: `
+            In physical ASIC synthesis, clock gating using logic gates is strictly avoided because it introduces clock skew and timing violations.
+            Instead, clock enable is implemented using a <strong>recirculating MUX</strong> before the flip-flop:
+            <code>always @(posedge clk) if (en) q &lt;= d;</code>
+            When EN is 0, the previous Q is fed back into D, holding state safely.
+        `,
+        task: 'Wire the circuit: connect D to MUX in1, loop DFF Q back to MUX in0, connect EN to MUX select, and route MUX output to DFF data in. Step the clock in Waveform tab to verify that D is ignored when EN=0.',
+        starterCircuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
+                { id: 'input_en', type: 'INPUT', label: 'EN', x: 60, y: 190, value: 0 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 260, value: 0 },
+                { id: 'mux_1', type: 'MUX2', label: 'MUX', x: 220, y: 90 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF', x: 360, y: 100 },
+                { id: 'output_q', type: 'OUTPUT', label: 'Q', x: 500, y: 115 }
+            ],
+            connections: [
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
+            ]
+        },
+        validate: (graph, simulator, sequentialEngine) => {
+            const dffs = graph.getDFFComponents();
+            const muxes = Array.from(graph.components.values()).filter(c => c.type === 'MUX2');
+            const clocks = graph.getClockComponents();
+            const outputs = graph.getOutputComponents();
+            const inputs = graph.getInputComponents();
+
+            if (dffs.length === 0 || muxes.length === 0 || clocks.length === 0 || outputs.length === 0) {
+                return { pass: false, message: 'Circuit must include a DFF, a 2:1 MUX, a Clock, and an Output component.' };
+            }
+
+            const dff = dffs[0];
+            const mux = muxes[0];
+            const clk = clocks[0];
+            const outQ = outputs[0];
+
+            const inD = inputs.find(i => i.label.toUpperCase() === 'D') || inputs[0];
+            const inEn = inputs.find(i => i.label.toUpperCase() === 'EN') || inputs[1];
+
+            // Structural check: DFF input connected to MUX output
+            if (!dff.inputs[0].connectedTo || dff.inputs[0].connectedTo.componentId !== mux.id) {
+                return { pass: false, message: 'The D input of the flip-flop must be driven by the output of the 2:1 MUX.' };
+            }
+
+            // Check feedback loop: MUX has an input driven by DFF output
+            const muxHasFeedback = mux.inputs.some(p => p.connectedTo && p.connectedTo.componentId === dff.id);
+            if (!muxHasFeedback) {
+                return { pass: false, message: 'The recirculating loop is missing: connect DFF Q output back to MUX input 0 (hold state).' };
+            }
+
+            if (!sequentialEngine) {
+                return { pass: true, message: 'Structural wiring valid.' };
+            }
+
+            // Behavioral verification using sequential engine
+            sequentialEngine.reset();
+            sequentialEngine.initializeDFFs();
+            simulator.evaluate();
+
+            // Test 1: EN=0, D=1. Apply posedge -> Q must stay 0
+            graph.setInputValue(inD.id, 1);
+            graph.setInputValue(inEn.id, 0);
+            simulator.evaluate();
+            sequentialEngine.clockStep(); // 0 -> 1
+            sequentialEngine.clockStep(); // 1 -> 0
+            if (sequentialEngine.getDFFState(dff.id).Q !== 0) {
+                return { pass: false, message: 'Clock Enable failed: When EN=0, rising clock must NOT load D=1 into Q.' };
+            }
+
+            // Test 2: EN=1, D=1. Apply posedge -> Q must update to 1
+            graph.setInputValue(inEn.id, 1);
+            simulator.evaluate();
+            sequentialEngine.clockStep(); // 0 -> 1
+            sequentialEngine.clockStep(); // 1 -> 0
+            if (sequentialEngine.getDFFState(dff.id).Q !== 1) {
+                return { pass: false, message: 'Load failed: When EN=1, rising clock must load D=1 into Q.' };
+            }
+
+            // Test 3: EN=0, D=0. Apply posedge -> Q must hold 1
+            graph.setInputValue(inD.id, 0);
+            graph.setInputValue(inEn.id, 0);
+            simulator.evaluate();
+            sequentialEngine.clockStep(); // 0 -> 1
+            sequentialEngine.clockStep(); // 1 -> 0
+            if (sequentialEngine.getDFFState(dff.id).Q !== 1) {
+                return { pass: false, message: 'Retention failed: When EN=0 and D changes to 0, Q must retain 1.' };
+            }
+
+            return {
+                pass: true,
+                message: '🎉 Perfect! Your recirculating clock enable register holds state when EN=0 and synchronously loads when EN=1. This is the exact pattern synthesized by ASIC standard cell libraries.'
+            };
+        }
+    },
+
+    {
+        id: 'lesson-7-sync-reset',
+        title: '7. Register with Synchronous Reset',
+        difficulty: 'advanced',
+        description: 'Build synchronous reset logic forcing flip-flop Q to 0 on posedge clk when RST=1.',
+        objective: 'Implement synchronous reset logic where Q <= RST ? 0 : D on the rising clock edge.',
+        explanation: `
+            Synchronous reset guarantees that state resets in total alignment with the clock network, avoiding asynchronous recovery/removal timing hazards.
+            In RTL:
+            <code>always @(posedge clk) begin if (rst) q &lt;= 1'b0; else q &lt;= d; end</code>
+            In gate-level synthesis, this maps to an AND gate with inverted reset: <code>D_eff = D &amp; (~RST)</code>.
+        `,
+        task: 'Wire the circuit: route RST through the NOT gate into an AND gate. Route data input D into the other AND gate input. Connect AND output to DFF data input. Verify that RST=1 synchronously forces Q to 0 on the next clock edge.',
+        starterCircuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
+                { id: 'input_rst', type: 'INPUT', label: 'RST', x: 60, y: 160, value: 0 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 250, value: 0 },
+                { id: 'not_1', type: 'NOT', label: 'NOT', x: 180, y: 160 },
+                { id: 'and_1', type: 'AND', label: 'AND', x: 280, y: 90 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF', x: 380, y: 100 },
+                { id: 'output_q', type: 'OUTPUT', label: 'Q', x: 520, y: 115 }
+            ],
+            connections: [
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
+            ]
+        },
+        validate: (graph, simulator, sequentialEngine) => {
+            const dffs = graph.getDFFComponents();
+            const clocks = graph.getClockComponents();
+            const inputs = graph.getInputComponents();
+
+            if (dffs.length === 0 || clocks.length === 0) {
+                return { pass: false, message: 'Circuit must include a DFF and a Clock.' };
+            }
+
+            const dff = dffs[0];
+            const inD = inputs.find(i => i.label.toUpperCase() === 'D') || inputs[0];
+            const inRst = inputs.find(i => i.label.toUpperCase() === 'RST') || inputs[1];
+
+            if (!dff.inputs[0].connectedTo) {
+                return { pass: false, message: 'Connect the reset gating logic to the DFF data input.' };
+            }
+
+            if (!sequentialEngine) {
+                return { pass: true, message: 'Structural wiring valid.' };
+            }
+
+            // Behavioral test
+            sequentialEngine.reset();
+            sequentialEngine.initializeDFFs();
+            simulator.evaluate();
+
+            // Test 1: RST=0, D=1 -> Q becomes 1
+            graph.setInputValue(inRst.id, 0);
+            graph.setInputValue(inD.id, 1);
+            simulator.evaluate();
+            sequentialEngine.clockStep();
+            sequentialEngine.clockStep();
+            if (sequentialEngine.getDFFState(dff.id).Q !== 1) {
+                return { pass: false, message: 'Normal loading failed: When RST=0 and D=1, rising clock should set Q=1.' };
+            }
+
+            // Test 2: RST=1, D=1 -> Q synchronously resets to 0!
+            graph.setInputValue(inRst.id, 1);
+            simulator.evaluate();
+            sequentialEngine.clockStep();
+            sequentialEngine.clockStep();
+            if (sequentialEngine.getDFFState(dff.id).Q !== 0) {
+                return { pass: false, message: 'Synchronous reset failed: When RST=1, rising clock must force Q to 0 even if D=1.' };
+            }
+
+            // Test 3: RST=0, D=1 -> Q loads 1 again
+            graph.setInputValue(inRst.id, 0);
+            simulator.evaluate();
+            sequentialEngine.clockStep();
+            sequentialEngine.clockStep();
+            if (sequentialEngine.getDFFState(dff.id).Q !== 1) {
+                return { pass: false, message: 'Reset deassertion failed: When RST returns to 0, normal operation must resume.' };
+            }
+
+            return {
+                pass: true,
+                message: '🎉 Outstanding! Synchronous reset verified. When RST=1, the active clock edge synchronously clears state without glitches.'
+            };
+        }
+    },
+
+    {
+        id: 'lesson-8-clock-timing',
+        title: '8. Clock Edge Timing & Pipelines',
+        difficulty: 'advanced',
+        description: 'Explore cycle-by-cycle latency across a multi-stage flip-flop pipeline.',
+        objective: 'Observe how data pulses propagate through a 2-stage shift register strictly on rising clock edges.',
+        explanation: `
+            In synchronous digital systems, logic stages are partitioned by registers.
+            Each register introduces exactly <strong>1 clock cycle of latency</strong>.
+            In a 2-stage pipeline ($D \\to \\text{DFF}_1 \\to \\text{DFF}_2$), a pulse on D appears at $Q_1$ on cycle 1, and at $Q_2$ on cycle 2.
+            This cycle-by-cycle pipeline isolation allows ASICs to run at high clock frequencies.
+        `,
+        task: 'Connect input D to DFF1, DFF1 Q to DFF2 D, and both flip-flops to the shared CLK. Route Q1 to Output 1, and Q2 to Output 2. Step the clock to observe pipeline propagation.',
+        starterCircuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 190, value: 0 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF1', x: 200, y: 80 },
+                { id: 'dff_2', type: 'DFF', label: 'DFF2', x: 340, y: 80 },
+                { id: 'out_q1', type: 'OUTPUT', label: 'Q1', x: 220, y: 220 },
+                { id: 'out_q2', type: 'OUTPUT', label: 'Q2', x: 480, y: 95 }
+            ],
+            connections: [
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_2', toPin: 'dff_2.in1' }
+            ]
+        },
+        validate: (graph, simulator, sequentialEngine) => {
+            const dffs = graph.getDFFComponents();
+            const clocks = graph.getClockComponents();
+            const outputs = graph.getOutputComponents();
+            const inputs = graph.getInputComponents();
+
+            if (dffs.length < 2) {
+                return { pass: false, message: 'Circuit must contain 2 D Flip-Flops for the pipeline stages.' };
+            }
+            if (clocks.length === 0) {
+                return { pass: false, message: 'Circuit must contain a shared Clock.' };
+            }
+            if (outputs.length < 2) {
+                return { pass: false, message: 'Circuit must contain 2 Output components (Q1 and Q2).' };
+            }
+
+            const dff1 = dffs[0];
+            const dff2 = dffs[1];
+            const inD = inputs[0];
+
+            if (!dff1.inputs[0].connectedTo) {
+                return { pass: false, message: 'Connect input D to the first flip-flop (DFF1).' };
+            }
+            if (!dff2.inputs[0].connectedTo) {
+                return { pass: false, message: 'Connect DFF1 Q output to DFF2 D input.' };
+            }
+
+            if (!sequentialEngine) {
+                return { pass: true, message: 'Structural wiring valid.' };
+            }
+
+            sequentialEngine.reset();
+            sequentialEngine.initializeDFFs();
+
+            // Cycle 1: D=1 -> Q1=1, Q2=0
+            graph.setInputValue(inD.id, 1);
+            simulator.evaluate();
+            sequentialEngine.clockStep();
+            sequentialEngine.clockStep();
+
+            const q1_cycle1 = sequentialEngine.getDFFState(dff1.id).Q;
+            const q2_cycle1 = sequentialEngine.getDFFState(dff2.id).Q;
+            if (q1_cycle1 !== 1 || q2_cycle1 !== 0) {
+                return {
+                    pass: false,
+                    message: `Cycle 1 error: Expected Q1=1, Q2=0. Got Q1=${q1_cycle1}, Q2=${q2_cycle1}.`
+                };
+            }
+
+            // Cycle 2: D=0 -> Q1=0, Q2=1
+            graph.setInputValue(inD.id, 0);
+            simulator.evaluate();
+            sequentialEngine.clockStep();
+            sequentialEngine.clockStep();
+
+            const q1_cycle2 = sequentialEngine.getDFFState(dff1.id).Q;
+            const q2_cycle2 = sequentialEngine.getDFFState(dff2.id).Q;
+            if (q1_cycle2 !== 0 || q2_cycle2 !== 1) {
+                return {
+                    pass: false,
+                    message: `Cycle 2 error: Expected Q1=0, Q2=1 (data moved to stage 2). Got Q1=${q1_cycle2}, Q2=${q2_cycle2}.`
+                };
+            }
+
+            return {
+                pass: true,
+                message: '🎉 Congratulations! You have successfully constructed and verified a 2-stage pipelined shift register. Notice how simultaneous nonblocking evaluation prevents shoot-through race conditions!'
+            };
+        }
     }
 ];
 

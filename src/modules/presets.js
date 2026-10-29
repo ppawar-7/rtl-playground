@@ -123,5 +123,75 @@ export const PRESETS = {
                 { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
             ]
         }
+    },
+
+    'reg-enable': {
+        name: 'Register with Clock Enable',
+        description: 'ASIC recirculating MUX enable pattern: when EN=0, DFF holds Q; when EN=1, loads D.',
+        circuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
+                { id: 'input_en', type: 'INPUT', label: 'EN', x: 60, y: 200, value: 1 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 270, value: 0 },
+                { id: 'mux_1', type: 'MUX2', label: 'MUX', x: 220, y: 90 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF', x: 360, y: 100 },
+                { id: 'output_q', type: 'OUTPUT', label: 'Q', x: 500, y: 115 }
+            ],
+            connections: [
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'mux_1', toPin: 'mux_1.in0' },
+                { fromComponent: 'input_d', fromPin: 'input_d.out0', toComponent: 'mux_1', toPin: 'mux_1.in1' },
+                { fromComponent: 'input_en', fromPin: 'input_en.out0', toComponent: 'mux_1', toPin: 'mux_1.in2' },
+                { fromComponent: 'mux_1', fromPin: 'mux_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in0' },
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
+            ]
+        }
+    },
+
+    'reg-sync-reset': {
+        name: 'Register with Synchronous Reset',
+        description: 'Synchronous reset register: when RST=1 on rising clock edge, Q is cleared to 0.',
+        circuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
+                { id: 'input_rst', type: 'INPUT', label: 'RST', x: 60, y: 150, value: 0 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 230, value: 0 },
+                { id: 'not_1', type: 'NOT', label: 'NOT', x: 180, y: 150 },
+                { id: 'and_1', type: 'AND', label: 'AND', x: 280, y: 90 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF', x: 380, y: 100 },
+                { id: 'output_q', type: 'OUTPUT', label: 'Q', x: 520, y: 115 }
+            ],
+            connections: [
+                { fromComponent: 'input_rst', fromPin: 'input_rst.out0', toComponent: 'not_1', toPin: 'not_1.in0' },
+                { fromComponent: 'input_d', fromPin: 'input_d.out0', toComponent: 'and_1', toPin: 'and_1.in0' },
+                { fromComponent: 'not_1', fromPin: 'not_1.out0', toComponent: 'and_1', toPin: 'and_1.in1' },
+                { fromComponent: 'and_1', fromPin: 'and_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in0' },
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
+            ]
+        }
+    },
+
+    'shift-reg-2stage': {
+        name: '2-Stage Shift Register Pipeline',
+        description: 'Two DFFs clocked on shared CLK demonstrating cycle-by-cycle pipeline propagation.',
+        circuit: {
+            components: [
+                { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
+                { id: 'clock_1', type: 'CLOCK', label: 'CLK', x: 60, y: 180, value: 0 },
+                { id: 'dff_1', type: 'DFF', label: 'DFF1', x: 200, y: 80 },
+                { id: 'dff_2', type: 'DFF', label: 'DFF2', x: 340, y: 80 },
+                { id: 'output_q1', type: 'OUTPUT', label: 'Q1', x: 220, y: 220 },
+                { id: 'output_q2', type: 'OUTPUT', label: 'Q2', x: 480, y: 95 }
+            ],
+            connections: [
+                { fromComponent: 'input_d', fromPin: 'input_d.out0', toComponent: 'dff_1', toPin: 'dff_1.in0' },
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_1', toPin: 'dff_1.in1' },
+                { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_2', toPin: 'dff_2.in1' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'dff_2', toPin: 'dff_2.in0' },
+                { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q1', toPin: 'output_q1.in0' },
+                { fromComponent: 'dff_2', fromPin: 'dff_2.out0', toComponent: 'output_q2', toPin: 'output_q2.in0' }
+            ]
+        }
     }
 };

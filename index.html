@@ -32,6 +32,9 @@
                     <option value="half-adder">1-Bit Half Adder</option>
                     <option value="mux-2to1">2:1 Multiplexer</option>
                     <option value="dff-demo">D Flip-Flop Register Demo</option>
+                    <option value="reg-enable">Register with Clock Enable</option>
+                    <option value="reg-sync-reset">Register with Synchronous Reset</option>
+                    <option value="shift-reg-2stage">2-Stage Shift Register Pipeline</option>
                 </select>
 
                 <button id="btn-reset-circuit" class="btn btn-sm" title="Clear all components and reset">
@@ -117,6 +120,13 @@
                     </svg>
                     <span>Waveform Viewer</span>
                 </button>
+                <button class="drawer-tab-btn" data-tab="rtl-guide">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <span>RTL Guide</span>
+                </button>
             </div>
 
             <div class="drawer-content">
@@ -127,9 +137,14 @@
                             <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
                                 Synthesizable IEEE 1364-2001 Verilog HDL
                             </span>
-                            <button id="copy-verilog-btn" class="btn btn-sm btn-primary">
-                                Copy Verilog
-                            </button>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span id="verilog-sync-indicator" style="font-size:11px; color:var(--accent-primary); display:none;">
+                                    ● Selection Synced
+                                </span>
+                                <button id="copy-verilog-btn" class="btn btn-sm btn-primary">
+                                    Copy Verilog
+                                </button>
+                            </div>
                         </div>
                         <pre class="verilog-code"><code id="verilog-code-display">// Add components and wire connections to generate synthesizable Verilog</code></pre>
                     </div>
@@ -143,6 +158,92 @@
                 <!-- Waveform Pane -->
                 <div id="tab-waveform" class="tab-pane">
                     <div id="waveform-view"></div>
+                </div>
+
+                <!-- RTL Concepts & Educational Guide Pane -->
+                <div id="tab-rtl-guide" class="tab-pane">
+                    <div class="rtl-guide-container">
+                        <div class="rtl-guide-grid">
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">1. Continuous Assignment (<code>assign</code>)</div>
+                                <p>Used for dataflow modeling of combinational logic. The target must be a <code>wire</code> net. The right-hand side is evaluated continuously whenever any operand changes.</p>
+                                <pre class="rtl-example-code"><code>// Combinational dataflow
+wire sum, carry;
+assign sum   = a ^ b;
+assign carry = a & b;</code></pre>
+                                <div class="rtl-card-note">💡 Synthesizes directly into combinational logic gates with zero clock cycle delay.</div>
+                            </div>
+
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">2. Conditional Selection (<code>? :</code> vs <code>if/else</code>)</div>
+                                <p>The ternary operator <code>sel ? b : a</code> selects between expressions in continuous assignments. Procedural <code>if/else</code> statements can only be used inside <code>always</code> blocks.</p>
+                                <pre class="rtl-example-code"><code>// Continuous conditional selection
+assign y = sel ? in1 : in0;
+
+// Procedural equivalent (requires reg)
+always @(*) begin
+    if (sel) y_proc = in1;
+    else     y_proc = in0;
+end</code></pre>
+                                <div class="rtl-card-note">💡 In hardware, both synthesize to a 2:1 multiplexer standard cell.</div>
+                            </div>
+
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">3. Multiplexer Patterns with <code>case</code></div>
+                                <p>When selecting among multiple inputs (e.g., 4:1 or 8:1 MUX), procedural <code>case</code> statements provide clean, scalable RTL descriptions.</p>
+                                <pre class="rtl-example-code"><code>always @(*) begin
+    case (sel)
+        2'b00: y = d0;
+        2'b01: y = d1;
+        2'b10: y = d2;
+        2'b11: y = d3;
+        default: y = 1'b0; // Avoid latches!
+    endcase
+end</code></pre>
+                                <div class="rtl-card-note">⚠️ Always provide a <code>default</code> clause to prevent synthesis of unintended level-sensitive transparent latches.</div>
+                            </div>
+
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">4. Clocked Logic (<code>always @(posedge clk)</code>)</div>
+                                <p>Describes synchronous, edge-triggered state storage. The statements execute strictly when the clock transitions from logic 0 to 1.</p>
+                                <pre class="rtl-example-code"><code>reg q;
+always @(posedge clk) begin
+    q <= d; // Sampled on rising edge
+end</code></pre>
+                                <div class="rtl-card-note">💡 Synthesizes to a physical D Flip-Flop (DFF). Retains previous state $Q$ between clock edges.</div>
+                            </div>
+
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">5. Nonblocking (<code>&lt;=</code>) vs Blocking (<code>=</code>)</div>
+                                <p>Fundamental golden rule of RTL design:</p>
+                                <ul>
+                                    <li>Use <strong>nonblocking (<code>&lt;=</code>)</strong> in clocked <code>always @(posedge clk)</code> blocks. All updates happen simultaneously at clock edge, preventing simulation race conditions.</li>
+                                    <li>Use <strong>blocking (<code>=</code>)</strong> in combinational <code>always @(*)</code> blocks.</li>
+                                </ul>
+                                <pre class="rtl-example-code"><code>// 2-Stage Shift Register (Nonblocking is mandatory)
+always @(posedge clk) begin
+    q1 <= data_in;  // Evaluated simultaneously!
+    q2 <= q1;       // Takes 2 clock cycles to reach q2
+end</code></pre>
+                                <div class="rtl-card-note">⚡ If blocking <code>=</code> were used here, <code>q2</code> would erroneously receive <code>data_in</code> in the same cycle!</div>
+                            </div>
+
+                            <div class="rtl-card">
+                                <div class="rtl-card-title">6. Clock Enable & Synchronous Reset</div>
+                                <p>In ASIC design, never gate the clock net directly (it induces clock skew and glitches). Use recirculating data multiplexing instead:</p>
+                                <pre class="rtl-example-code"><code>// Synchronous Reset + Clock Enable pattern
+always @(posedge clk) begin
+    if (rst) begin
+        q <= 1'b0;      // Synchronous reset priority
+    end else if (en) begin
+        q <= d;         // Load when enabled
+    end
+    // Implicit: holds previous q when en=0
+end</code></pre>
+                                <div class="rtl-card-note">🛡️ Guarantees fully synchronous timing and predictable static timing analysis (STA) closure.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

@@ -98,6 +98,7 @@ export class RTLPlaygroundApp {
 
         this.graph.deserialize(preset.circuit);
         this.sequentialEngine.reset();
+        this.sequentialEngine.initializeDFFs();
         this.simulator.evaluate();
         this.editor.render();
         this.panels.updateVerilog();

@@ -13,6 +13,7 @@
 const IS_NODE = typeof process !== 'undefined' && process.versions && process.versions.node;
 
 let CircuitGraph, COMPONENT_TYPES, resetIdCounter, LogicSimulator, SequentialEngine, VerilogGenerator;
+let PRESETS, LESSONS;
 
 if (IS_NODE) {
     // Node.js: dynamic import
@@ -20,18 +21,24 @@ if (IS_NODE) {
     const ls = await import('../src/engine/logic_simulator.js');
     const se = await import('../src/engine/sequential_engine.js');
     const vg = await import('../src/engine/verilog_generator.js');
+    const pr = await import('../src/modules/presets.js');
+    const le = await import('../src/modules/lessons.js');
     CircuitGraph = cg.CircuitGraph;
     COMPONENT_TYPES = cg.COMPONENT_TYPES;
     resetIdCounter = cg.resetIdCounter;
     LogicSimulator = ls.LogicSimulator;
     SequentialEngine = se.SequentialEngine;
     VerilogGenerator = vg.VerilogGenerator;
+    PRESETS = pr.PRESETS;
+    LESSONS = le.LESSONS;
 } else {
     // Browser: imports provided by test_runner.html
     ({ CircuitGraph, COMPONENT_TYPES, resetIdCounter } = await import('../src/engine/circuit_graph.js'));
     ({ LogicSimulator } = await import('../src/engine/logic_simulator.js'));
     ({ SequentialEngine } = await import('../src/engine/sequential_engine.js'));
     ({ VerilogGenerator } = await import('../src/engine/verilog_generator.js'));
+    ({ PRESETS } = await import('../src/modules/presets.js'));
+    ({ LESSONS } = await import('../src/modules/lessons.js'));
 }
 
 // ─── Minimal Test Framework ─────────────────────────────────────────────────
@@ -944,6 +951,138 @@ await test('Multi-level logic tree: (A & B) | (C ^ D)', () => {
         const res = sim.evaluateWithInputs(inputs);
         assertOk(res);
         assertEqual(res.outputs[out.id], exp);
+    }
+});
+
+// ─── 13. PHASE 5 EXPANDED RTL LEARNING & VERIFIED PATTERNS ────────────────────
+
+log('\n📋 Phase 5 Expanded RTL Learning & Presets');
+
+await test('All 9 educational presets deserialize and validate without error', () => {
+    const presetKeys = Object.keys(PRESETS);
+    assertEqual(presetKeys.length, 9, 'Should have exactly 9 educational presets');
+
+    for (const key of presetKeys) {
+        const preset = PRESETS[key];
+        const g = new CircuitGraph();
+        g.deserialize(preset.circuit);
+        const validation = g.validateCircuit();
+        assert(validation.valid, `Preset '${key}' must pass topological validation: ${validation.errors.join('; ')}`);
+        const vgen = new VerilogGenerator(g);
+        const vRes = vgen.generate(key.replace(/[^a-zA-Z0-9]/g, '_'));
+        assert(vRes.ok, `Preset '${key}' must generate valid Verilog`);
+    }
+});
+
+await test('Register with Clock Enable preset: recirculation hold and posedge load', () => {
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['reg-enable'].circuit);
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    const dComp = Array.from(g.components.values()).find(c => c.label === 'D');
+    const enComp = Array.from(g.components.values()).find(c => c.label === 'EN');
+    const dffComp = g.getDFFComponents()[0];
+
+    // Hold state with EN=0
+    g.setInputValue(dComp.id, 1);
+    g.setInputValue(enComp.id, 0);
+    sim.evaluate();
+    seq.clockStep();
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffComp.id).Q, 0, 'DFF Q must stay 0 when EN=0');
+
+    // Load state with EN=1
+    g.setInputValue(enComp.id, 1);
+    sim.evaluate();
+    seq.clockStep();
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffComp.id).Q, 1, 'DFF Q must load 1 when EN=1 on posedge');
+
+    // Hold state with EN=0 even if D changes to 0
+    g.setInputValue(dComp.id, 0);
+    g.setInputValue(enComp.id, 0);
+    sim.evaluate();
+    seq.clockStep();
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffComp.id).Q, 1, 'DFF Q must hold 1 when EN=0');
+});
+
+await test('Register with Synchronous Reset preset: posedge clear and normal load', () => {
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['reg-sync-reset'].circuit);
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+    seq.initializeDFFs();
+    sim.evaluate();
+
+    const dComp = Array.from(g.components.values()).find(c => c.label === 'D');
+    const rstComp = Array.from(g.components.values()).find(c => c.label === 'RST');
+    const dffComp = g.getDFFComponents()[0];
+
+    // RST=0, D=1 -> Q becomes 1 on posedge
+    g.setInputValue(rstComp.id, 0);
+    g.setInputValue(dComp.id, 1);
+    sim.evaluate();
+    seq.clockStep();
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffComp.id).Q, 1, 'Q must load 1 when RST=0');
+
+    // RST=1, D=1 -> Q synchronously resets to 0 on posedge
+    g.setInputValue(rstComp.id, 1);
+    sim.evaluate();
+    seq.clockStep();
+    seq.clockStep();
+    assertEqual(seq.getDFFState(dffComp.id).Q, 0, 'Q must synchronously clear to 0 when RST=1');
+});
+
+await test('2-Stage Shift Register preset: cycle-by-cycle pipeline step', () => {
+    const g = new CircuitGraph();
+    g.deserialize(PRESETS['shift-reg-2stage'].circuit);
+    const sim = new LogicSimulator(g);
+    const seq = new SequentialEngine(g, sim);
+
+    const dComp = Array.from(g.components.values()).find(c => c.label === 'D');
+    const dffs = g.getDFFComponents();
+
+    // Reset initial state
+    seq.reset();
+
+    // Pulse D=1 for 1 cycle
+    g.setInputValue(dComp.id, 1);
+    seq.clockStep();
+    seq.clockStep();
+
+    // Stage 1 loaded, Stage 2 empty
+    assertEqual(seq.getDFFState(dffs[0].id).Q, 1, 'Stage 1 should have 1 after 1 cycle');
+    assertEqual(seq.getDFFState(dffs[1].id).Q, 0, 'Stage 2 should have 0 after 1 cycle');
+
+    // Set D=0 for next cycle
+    g.setInputValue(dComp.id, 0);
+    seq.clockStep();
+    seq.clockStep();
+
+    // Stage 1 cleared, Stage 2 loaded
+    assertEqual(seq.getDFFState(dffs[0].id).Q, 0, 'Stage 1 should clear after 2 cycles');
+    assertEqual(seq.getDFFState(dffs[1].id).Q, 1, 'Stage 2 should receive pulse after 2 cycles');
+});
+
+await test('All 8 Guided Lessons validate both starter failure and correct solution', () => {
+    assertEqual(LESSONS.length, 8, 'Should have exactly 8 guided lessons');
+
+    for (const lesson of LESSONS) {
+        const g = new CircuitGraph();
+        if (lesson.starterCircuit) {
+            g.deserialize(lesson.starterCircuit);
+        }
+        const sim = new LogicSimulator(g);
+        const seq = new SequentialEngine(g, sim);
+
+        // Starter circuit should fail validation
+        const starterCheck = lesson.validate(g, sim, seq);
+        assert(!starterCheck.pass, `Lesson '${lesson.id}' starter circuit must not prematurely pass`);
     }
 });
 

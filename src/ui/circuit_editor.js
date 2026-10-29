@@ -684,6 +684,14 @@ export class CircuitEditor {
 
     // ─── Selection Management ───────────────────────────────────────────────
 
+    selectComponent(id) {
+        this._selectComponent(id);
+    }
+
+    selectWire(id) {
+        this._selectWire(id);
+    }
+
     _selectComponent(id) {
         this.selectedComponentId = id;
         this.selectedWireId = null;

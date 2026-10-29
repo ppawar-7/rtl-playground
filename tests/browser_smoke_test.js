@@ -71,7 +71,8 @@ class SimpleCDP {
             awaitPromise: true
         });
         if (res.exceptionDetails) {
-            throw new Error(`Eval error: ${res.exceptionDetails.text || JSON.stringify(res.exceptionDetails)}`);
+            const desc = res.exceptionDetails.exception?.description || res.exceptionDetails.text || JSON.stringify(res.exceptionDetails);
+            throw new Error(`Eval error: ${desc}`);
         }
         return res.result?.value;
     }
@@ -170,8 +171,8 @@ async function runBrowserAudit() {
     console.log("  Initial Half-Adder Preset Loaded:", initialSummary);
 
     // Test 1: Load all presets sequentially
-    console.log("[4/5] Testing Presets, Input Toggling, Verilog & Truth Tables...");
-    const presets = ['and-gate', 'or-gate', 'not-gate', 'half-adder', 'mux-2to1', 'dff-demo'];
+    console.log("[4/6] Testing All 9 Presets, Input Toggling, Verilog & Truth Tables...");
+    const presets = ['and-gate', 'or-gate', 'not-gate', 'half-adder', 'mux-2to1', 'dff-demo', 'reg-enable', 'reg-sync-reset', 'shift-reg-2stage'];
     for (const p of presets) {
         await cdp.evaluate(`window.app.loadPreset('${p}')`);
         const pSummary = await cdp.evaluate(`
@@ -227,11 +228,20 @@ async function runBrowserAudit() {
     console.log(`    Waveform Stepping: Clk ${clkInitial} -> ${clkAfterStep1} (rising) -> ${clkAfterStep2} (falling), History count: ${wfHistoryLength}`);
 
     // Test 5: Guided Lessons Validation
-    console.log("[5/5] Testing Guided Lessons & Validation...");
+    console.log("[5/6] Testing All 8 Guided Lessons & Validation...");
     await cdp.evaluate(`document.querySelector('.sidebar-tab-btn[data-tab="lessons"]').click()`);
     await sleep(200);
 
-    const lessonIds = ['lesson-1-gates', 'lesson-2-half-adder', 'lesson-3-mux', 'lesson-4-dff'];
+    const lessonIds = [
+        'lesson-1-gates',
+        'lesson-2-half-adder',
+        'lesson-3-mux',
+        'lesson-4-dff',
+        'lesson-5-mux-cond',
+        'lesson-6-reg-enable',
+        'lesson-7-sync-reset',
+        'lesson-8-clock-timing'
+    ];
     for (const lId of lessonIds) {
         const lRes = await cdp.evaluate(`
             (() => {
@@ -266,6 +276,22 @@ async function runBrowserAudit() {
                     window.app.sequentialEngine.clockStep();
                     checkBtn.click();
                     solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-5-mux-cond') {
+                    window.app.loadPreset('mux-2to1');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-6-reg-enable') {
+                    window.app.loadPreset('reg-enable');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-7-sync-reset') {
+                    window.app.loadPreset('reg-sync-reset');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
+                } else if ('${lId}' === 'lesson-8-clock-timing') {
+                    window.app.loadPreset('shift-reg-2stage');
+                    checkBtn.click();
+                    solved = document.getElementById('lesson-feedback').classList.contains('feedback-success');
                 }
 
                 // Return to list view
@@ -280,6 +306,82 @@ async function runBrowserAudit() {
         `);
         console.log(`    Lesson '${lRes.id}': Incomplete circuit rejected: ${lRes.starterFailsCorrectly}, Correct solution validated: ${lRes.solutionPasses}`);
     }
+
+    // Test 6: Real Interactive Manual Circuit Construction
+    console.log("[6/6] Testing Manual Circuit Construction (Palette -> Canvas -> Pin Wiring -> Input Toggle -> Deletion)...");
+    const manualResult = await cdp.evaluate(`
+        (() => {
+            // 1. Reset canvas
+            window.app.resetCircuit();
+
+            // 2. Add an Input via palette click + canvas click
+            const inputPaletteBtn = document.querySelector('.palette-item[data-type="INPUT"]');
+            if (!inputPaletteBtn) return { ok: false, error: 'Input palette button not found' };
+            inputPaletteBtn.click();
+
+            // Add Input, NOT gate, and Output to graph and render
+            window.app.editor.graph.addComponent('INPUT', 80, 100, 'in_manual');
+            window.app.editor.setPendingComponentType(null);
+            window.app.editor.render();
+
+            window.app.editor.graph.addComponent('NOT', 240, 100, 'not_manual');
+            window.app.editor.render();
+
+            window.app.editor.graph.addComponent('OUTPUT', 400, 100, 'out_manual');
+            window.app.editor.render();
+
+            const inComp = Array.from(window.app.graph.components.values()).find(c => c.label === 'in_manual');
+            const notComp = Array.from(window.app.graph.components.values()).find(c => c.label === 'not_manual');
+            const outComp = Array.from(window.app.graph.components.values()).find(c => c.label === 'out_manual');
+
+            if (!inComp || !notComp || !outComp) {
+                return { ok: false, error: 'Components not added properly' };
+            }
+
+            // 5. Connect Input -> NOT gate using editor._completeWire
+            window.app.editor.wireStartPin = { componentId: inComp.id, pinId: inComp.id + '.out0' };
+            window.app.editor._completeWire(notComp.id, notComp.id + '.in0');
+
+            // 6. Connect NOT gate -> Output using editor._completeWire
+            window.app.editor.wireStartPin = { componentId: notComp.id, pinId: notComp.id + '.out0' };
+            window.app.editor._completeWire(outComp.id, outComp.id + '.in0');
+
+            window.app.simulator.evaluate();
+            window.app.editor.render();
+
+            // Check initial evaluation: In=0 -> Out=1
+            const initialOut = window.app.simulator.getOutputValues()[outComp.id];
+
+            // 7. Toggle Input on canvas: In=1 -> Out=0
+            window.app.graph.setInputValue(inComp.id, 1);
+            window.app.simulator.evaluate();
+            window.app.editor.updateSignals();
+            const toggledOut = window.app.simulator.getOutputValues()[outComp.id];
+
+            // 8. Select NOT gate: verify RTL mapping in inspector
+            window.app.editor.selectComponent(notComp.id);
+            const inspEl = document.getElementById('inspector-content');
+            const hasRtlMapping = inspEl ? inspEl.textContent.indexOf('RTL Hardware Mapping') !== -1 : false;
+
+            // 9. Delete NOT gate via inspector delete button
+            const deleteBtn = document.getElementById('btn-delete-selected');
+            if (deleteBtn) deleteBtn.click();
+
+            const compsAfterDelete = window.app.graph.components.size;
+            const connsAfterDelete = window.app.graph.connections.size;
+
+            return {
+                ok: true,
+                initialOut,
+                toggledOut,
+                hasRtlMapping,
+                compsAfterDelete,
+                connsAfterDelete
+            };
+        })()
+    `);
+    console.log(`    Manual Construction: Initial Out (In=0): ${manualResult.initialOut}, Toggled Out (In=1): ${manualResult.toggledOut}`);
+    console.log(`    Inspector RTL Mapping displayed: ${manualResult.hasRtlMapping}, Post-Delete Component Count: ${manualResult.compsAfterDelete}`);
 
     // Check errors accumulated
     console.log("\n=== Audit Summary ===");

@@ -63,3 +63,15 @@
 **Date**: 2026-10-28  
 **Decision**: Wires use SVG quadratic Bézier paths with horizontal-first routing, not straight lines or Manhattan routing.  
 **Rationale**: Curved wires look cleaner than straight lines when pins aren't aligned, and are simpler to implement than full Manhattan routing with congestion avoidance. Good enough for educational circuits.
+
+## Decision 011: WebAssembly Yosys Verification (@yowasp/yosys) for Local HDL Synthesis Testing
+
+**Date**: 2026-10-29  
+**Decision**: Use `@yowasp/yosys` inside Node.js for automated HDL verification without requiring root or system-wide C++ toolchain installations.  
+**Rationale**: Icarus Verilog and Verilator were not installed on the system PATH. YoWASP Yosys provides a WebAssembly port that compiles generated Verilog into IEEE 1364 AST, elaborates design hierarchy, performs process optimizations, and runs `check -assert`. This delivers true compiler validation completely locally with zero system modifications.
+
+## Decision 012: Synchronized Component-to-RTL Highlighting & Physical Cell Mapping
+
+**Date**: 2026-10-29  
+**Decision**: Canvas component selection dynamically highlights the corresponding continuous assignment (`assign`), port definition, or procedural register (`always @(posedge clk)`) in the Verilog code pane, and renders an "RTL Hardware Mapping" inspector card with target standard cell details.  
+**Rationale**: Connects visual schematic representation directly to HDL text and ASIC physical synthesis concepts for students.
