@@ -18,7 +18,8 @@ import { resolveBrowserExecutable } from '../browser_resolver.js';
 
 import http from 'node:http';
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
-import { resolve, extname, dirname } from 'node:path';
+import { resolve, extname, dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -148,9 +149,12 @@ async function runBrowserAudit() {
     const edgeProcess = spawn(EDGE_PATH, [
         '--headless=new',
         `--remote-debugging-port=${CDP_PORT}`,
+        '--disable-gpu',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         '--no-first-run',
         '--no-default-browser-check',
-        '--user-data-dir=C:\\Users\\pranil\\AppData\\Local\\Temp\\edge_adv_profile_' + Date.now(),
+        `--user-data-dir=${join(tmpdir(), 'edge_adv_profile_' + Date.now())}`,
         'about:blank'
     ], { stdio: 'ignore' });
 

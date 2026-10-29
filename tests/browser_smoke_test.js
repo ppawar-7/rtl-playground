@@ -19,6 +19,7 @@ import { spawn } from 'node:child_process';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join, extname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -134,9 +135,12 @@ async function runBrowserAudit() {
     const edgeProcess = spawn(EDGE_PATH, [
         '--headless=new',
         `--remote-debugging-port=${PORT}`,
+        '--disable-gpu',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         '--no-first-run',
         '--no-default-browser-check',
-        '--user-data-dir=C:\\Users\\pranil\\AppData\\Local\\Temp\\edge_test_profile_' + Date.now(),
+        `--user-data-dir=${join(tmpdir(), 'edge_test_profile_' + Date.now())}`,
         'about:blank'
     ], { stdio: 'ignore' });
 

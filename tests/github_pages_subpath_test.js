@@ -17,7 +17,8 @@ import { resolveBrowserExecutable } from './browser_resolver.js';
 
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve, extname, dirname } from 'node:path';
+import { resolve, extname, dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -141,11 +142,13 @@ async function runSubpathAudit() {
     const server = await createSubpathServer();
     console.log(`  [Server] Subdirectory static server active at http://127.0.0.1:${HTTP_PORT}${SUBPATH_PREFIX}/`);
 
-    const tempProfile = 'C:\\Users\\pranil\\AppData\\Local\\Temp\\edge_subpath_profile_' + Date.now();
+    const tempProfile = join(tmpdir(), 'edge_subpath_profile_' + Date.now());
     const edgeProc = spawn(EDGE_PATH, [
         `--remote-debugging-port=${CDP_PORT}`,
         '--headless=new',
         '--disable-gpu',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         '--no-first-run',
         '--no-default-browser-check',
         `--user-data-dir=${tempProfile}`,
