@@ -12,7 +12,9 @@
     "test:browser": "node tests/browser_smoke_test.js",
     "test:browser:advanced": "node tests/advanced/browser_advanced_test.js",
     "test:stress": "node tests/stress/stress_runner.js",
-    "test:all": "node tests/run_all_integrated_tests.js"
+    "test:all": "node tests/run_all_integrated_tests.js",
+    "test:subpath": "node tests/github_pages_subpath_test.js",
+    "test:e2e": "node tests/cross_navigation_smoke_test.js"
   },
   "devDependencies": {
     "@veriflow/iverilog-wasm": "^0.1.4",

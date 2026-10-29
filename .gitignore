@@ -17,3 +17,6 @@ package-lock.json
 # Temp
 *.tmp
 *.log
+
+tmp_cdp*
+
