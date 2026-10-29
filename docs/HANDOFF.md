@@ -58,31 +58,37 @@ The PD Playground RTL platform has successfully completed the **Autonomous Full 
 
 ---
 
-## 4. Background Stress Testing Status (PID 22852)
+## 4. Background Stress Testing Status (PID 22852) — COMPLETED
 
-A separate 2-hour long-duration stress test was launched against commit `f9c6d7b` in PID 22852:
-- **Elapsed Time**: > 3,000 seconds (~50 minutes)
-- **Batches Completed**: > 53,600 batches
-- **Pass Rate**: 100.0% (0 failures recorded)
-- **Circuits Generated**: > 187,600 circuits
-- **Sequential Clock Steps**: > 1,072,000 steps
-- **Memory Consumption**: Steady at ~20 MB heap, ~228 MB RSS (0 leaks)
-- **Directive**: Do NOT terminate or kill PID 22852; allow it to run to completion.
+The 2-hour long-duration stress test launched against baseline commit `f9c6d7b` in PID 22852 has completed its full run:
+- **Duration**: Exactly 7,200 seconds (2.0 hours)
+- **Batches Completed**: 129,494 batches
+- **Circuits Generated & Tested**: 453,229 pseudo-random circuits
+- **Simulation Clock Cycles**: 1,338,342 cycles
+- **Yosys Syntheses Run**: 12,949 random sample syntheses
+- **Failures / Mismatches**: 0 (100.0% passing)
+- **Memory Consumption**: 20 MB heap, zero memory leaks (heap growth < 3.5 MB over 2 hours)
+- **Report Location**: `tests/stress/reports/run_20261029_003549/final_report.json`
 
 ---
 
 ## 5. Developer Guidance & Maintenance Notes
 
-1. **PowerShell on Windows**:
+1. **Running the Local Server**:
+   - `node server.js` serves the entire platform at `http://localhost:8085/`.
+   - Fundamentals: `http://localhost:8085/index.html`
+   - Advanced Lab: `http://localhost:8085/advanced-lab/index.html`
+2. **PowerShell on Windows**:
    - Running `npm` directly in PowerShell can trigger an execution policy block (`npm.ps1 cannot be loaded`). Always invoke `cmd /c npm <script>` or run `node <script_path>`.
-2. **Port Allocation Conventions**:
+3. **Port Allocation Conventions**:
+   - Local web server: Port 8085.
    - Background stress test: Ports 8080/8181 and CDP 9333.
    - Fundamentals browser test: Port 8088 and CDP 9222.
    - Advanced Lab browser test: Port 8089 and CDP 9229.
    - Cross-navigation test: Port 8092 and CDP 9235.
    - Student journeys audit: Port 8094 and CDP 9238.
    - Always specify isolated ports to prevent `EADDRINUSE` conflicts.
-3. **Repository Boundaries**:
+4. **Repository Boundaries**:
    - Do NOT push to GitHub or merge directly into `master`.
    - All release-ready engineering is committed locally on branch `integrate/full-rtl-playground` in `C:\Users\pranil\Documents\PD-Playground\rtl-playground-full`.
    - `STA Playground` (`ppawar-7/sta-playground`) remains isolated and untouched.
