@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build_site.js",
     "test": "node tests/tests.js",
+    "test:beginner": "node --test tests/test_beginner_experience.js",
     "test:advanced": "node tests/advanced/run_all_tests.js",
     "test:yosys": "node tests/verilog_verification/run_yosys_verification.js",
     "test:iverilog": "node tests/verilog_verification/run_iverilog_simulation.js",

@@ -455,14 +455,217 @@ export class PanelManager {
         }
     }
 
+    _getLiveBehaviorExplanation(comp) {
+        if (!comp) return null;
+        const in0 = comp.inputs?.[0]?.value ?? null;
+        const in1 = comp.inputs?.[1]?.value ?? null;
+        const in2 = comp.inputs?.[2]?.value ?? null;
+        const in3 = comp.inputs?.[3]?.value ?? null;
+        const out0 = comp.outputs?.[0]?.value ?? null;
+
+        switch (comp.type) {
+            case 'AND': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? 'Both inputs A and B are 1 (VDD). The internal CMOS pull-up network is active, driving output Y to 1.'
+                        : `Input A=${in0 !== null ? in0 : '?'} and Input B=${in1 !== null ? in1 : '?'}. An AND gate outputs 0 whenever any input is 0. Output is pulled down to GND (0).`
+                };
+            }
+            case 'OR': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? `Input A=${in0 !== null ? in0 : '?'}, B=${in1 !== null ? in1 : '?'}. Output Y is 1 because at least one input is HIGH (1).`
+                        : 'Both inputs A and B are 0 (GND). Output Y remains 0.'
+                };
+            }
+            case 'NOT': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: `Input is ${in0 !== null ? in0 : '?'}. The CMOS inverter flips the voltage: ${in0 === 0 ? '0V (GND) is inverted to VDD (1)' : 'VDD (1) is inverted to 0V (0)'}.`
+                };
+            }
+            case 'NAND': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? 'Output is 1 because NOT all inputs are 1. Inverted AND logic.'
+                        : 'Both inputs are 1, so the NAND gate inverts the result to 0.'
+                };
+            }
+            case 'NOR': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? 'Both inputs are 0, so the NOR gate drives output HIGH (1).'
+                        : 'At least one input is 1, so the NOR gate inverts the result to 0.'
+                };
+            }
+            case 'XOR': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? `Inputs are different (A=${in0}, B=${in1}). XOR generates 1 for odd parity (binary sum without carry).`
+                        : `Inputs are identical (A=${in0}, B=${in1}). XOR generates 0.`
+                };
+            }
+            case 'XNOR': {
+                const isHigh = out0 === 1;
+                return {
+                    state: isHigh ? 'OUTPUT HIGH (1)' : 'OUTPUT LOW (0)',
+                    stateColor: isHigh ? '#4ade80' : '#94a3b8',
+                    explanation: isHigh
+                        ? 'Inputs are identical. XNOR acts as a 1-bit equality comparator (A == B).'
+                        : 'Inputs are different, producing 0.'
+                };
+            }
+            case 'MUX2': {
+                const sel = in2 ?? 0;
+                const activeIn = sel === 1 ? in1 : in0;
+                return {
+                    state: `ROUTING PORT ${sel}`,
+                    stateColor: '#38bdf8',
+                    explanation: `Select line is ${sel}. The multiplexer is actively steering Input ${sel === 1 ? 'B (port 1)' : 'A (port 0)'} (value ${activeIn !== null ? activeIn : '?'}) directly to Output Y.`
+                };
+            }
+            case 'DFF': {
+                return {
+                    state: `STORED Q = ${out0 ?? 0}`,
+                    stateColor: out0 === 1 ? '#4ade80' : '#94a3b8',
+                    explanation: `Clock is ${in1 ?? 0}, incoming Data D is ${in0 ?? 0}. Stored state is Q=${out0 ?? 0}. On the next rising clock edge (0→1 transition), Q will capture ${in0 ?? 0}.`
+                };
+            }
+            case 'DFFE': {
+                const en = in2 ?? 0;
+                return {
+                    state: `STORED Q = ${out0 ?? 0} (EN=${en})`,
+                    stateColor: en === 1 ? '#38bdf8' : '#94a3b8',
+                    explanation: en === 1
+                        ? `Clock Enable EN=1. On the next rising clock edge, Q will load new Data D=${in0 ?? 0}.`
+                        : `Clock Enable EN=0. Clock pulses are ignored and Q=${out0 ?? 0} is held indefinitely.`
+                };
+            }
+            case 'DFFSR': {
+                const rst = in2 ?? 0;
+                return {
+                    state: `STORED Q = ${out0 ?? 0} (RST=${rst})`,
+                    stateColor: rst === 1 ? '#f87171' : '#94a3b8',
+                    explanation: rst === 1
+                        ? 'Synchronous Reset RST=1. On the next rising clock edge, Q will be synchronously forced to 0.'
+                        : `Normal operation (RST=0). Next clock edge loads Data D=${in0 ?? 0}.`
+                };
+            }
+            case 'DFFESR': {
+                const en = in2 ?? 0;
+                const rst = in3 ?? 0;
+                return {
+                    state: `STORED Q = ${out0 ?? 0} (RST=${rst}, EN=${en})`,
+                    stateColor: rst === 1 ? '#f87171' : (en === 1 ? '#38bdf8' : '#94a3b8'),
+                    explanation: rst === 1
+                        ? 'Reset Dominance: RST=1 overrides Enable! Next rising clock edge forces Q to 0.'
+                        : (en === 1 ? `EN=1, RST=0: Next clock edge loads D=${in0 ?? 0}.` : 'EN=0, RST=0: Register retains state.')
+                };
+            }
+            case 'INPUT': {
+                const val = comp.value ?? 0;
+                return {
+                    state: val === 1 ? 'LOGIC HIGH (1 / VDD)' : 'LOGIC LOW (0 / GND)',
+                    stateColor: val === 1 ? '#4ade80' : '#94a3b8',
+                    explanation: 'Primary digital input switch. Click this component on the canvas to toggle its logic level between 0 and 1.'
+                };
+            }
+            case 'OUTPUT': {
+                const val = in0 ?? 0;
+                return {
+                    state: val === 1 ? 'PROBED HIGH (1)' : 'PROBED LOW (0)',
+                    stateColor: val === 1 ? '#4ade80' : '#94a3b8',
+                    explanation: `Primary circuit output monitor. Currently observing ${val === 1 ? 'HIGH (1 / green glow)' : 'LOW (0 / gray wire)'} from driving logic.`
+                };
+            }
+            case 'CLOCK': {
+                return {
+                    state: `CLOCK = ${comp.value ?? 0}`,
+                    stateColor: '#38bdf8',
+                    explanation: 'Synchronous clock signal. Pulse it in the Waveform Viewer tab (or press Clock Step) to advance sequential flip-flops.'
+                };
+            }
+            default:
+                return null;
+        }
+    }
+
     updateInspector(selection) {
         const inspectorContainer = document.getElementById('inspector-content');
         if (!inspectorContainer) return;
 
         if (!selection || !selection.type) {
-            // General circuit stats
+            // General circuit stats & beginner guidance
             const summary = this.graph.getSummary();
             const validation = this.graph.validateCircuit();
+
+            if (summary.componentCount === 0) {
+                // Empty canvas friendly quick-start card
+                inspectorContainer.innerHTML = `
+                    <div class="inspector-card" style="border-left: 3px solid var(--accent-primary);">
+                        <div class="inspector-card-title" style="color:var(--accent-primary);">
+                            <span>👋 Welcome to RTL Playground!</span>
+                        </div>
+                        <div style="font-size:12px; line-height:1.5; color:var(--text-muted); display:flex; flex-direction:column; gap:8px;">
+                            <div>New to digital design? Follow these 4 easy steps:</div>
+                            <ol style="margin:0 0 0 16px; padding:0; display:flex; flex-direction:column; gap:4px;">
+                                <li><strong style="color:var(--text-main);">Palette:</strong> Drag a logic gate (AND, OR, NOT) or Input switch from the left panel onto the canvas.</li>
+                                <li><strong style="color:var(--text-main);">Toggle Inputs:</strong> Click any Input switch (A, B) to toggle between <strong>0 (LOW)</strong> and <strong>1 (HIGH)</strong>.</li>
+                                <li><strong style="color:var(--text-main);">Wire Pins:</strong> Drag a wire from output pins to input pins.</li>
+                                <li><strong style="color:var(--text-main);">Guided Lessons:</strong> Open the <strong>Lessons</strong> tab on the left for step-by-step challenges!</li>
+                            </ol>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+                                <button id="btn-inspector-start-lesson" class="btn btn-primary btn-sm" style="width:100%;">
+                                    🚀 Start Lesson 1: Logic Gates →
+                                </button>
+                                <button id="btn-inspector-tour" class="btn btn-secondary btn-sm" style="width:100%;">
+                                    ❓ Open Quick Beginner Tour
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="inspector-card">
+                        <div class="inspector-card-title">Circuit Statistics</div>
+                        <div style="font-size:11.5px; color:var(--text-muted);">Canvas is currently empty. Drag components from the Palette to begin!</div>
+                    </div>
+                `;
+
+                const startLessonBtn = document.getElementById('btn-inspector-start-lesson');
+                if (startLessonBtn) {
+                    startLessonBtn.addEventListener('click', () => {
+                        const lessonsTabBtn = document.querySelector('.sidebar-tab-btn[data-tab="lessons"]');
+                        if (lessonsTabBtn) lessonsTabBtn.click();
+                        if (window.app && window.app.lessonManager) {
+                            const l1 = window.app.lessonManager.getLessonById('lesson-1-gates');
+                            if (l1) window.app.lessonManager.openLesson(l1);
+                        }
+                    });
+                }
+
+                const tourBtn = document.getElementById('btn-inspector-tour');
+                if (tourBtn && window.openQuickTour) {
+                    tourBtn.addEventListener('click', () => window.openQuickTour());
+                }
+                return;
+            }
 
             let healthHtml = '';
             if (!validation.valid) {
@@ -489,7 +692,16 @@ export class PanelManager {
                 `;
             }
 
+            // Summary card with live activity overview
             inspectorContainer.innerHTML = `
+                <div class="inspector-card" style="border-left: 3px solid var(--accent-primary);">
+                    <div class="inspector-card-title" style="color:var(--accent-primary);">⚡ Live Circuit Activity</div>
+                    <div style="font-size:11.5px; color:var(--text-muted); line-height:1.45;">
+                        <div>Currently simulating in real time.</div>
+                        <div style="margin-top:4px;">💡 <em>Tip: Click any component or wire on the canvas to inspect its live logic voltages and physical silicon behavior!</em></div>
+                    </div>
+                </div>
+
                 <div class="inspector-card">
                     <div class="inspector-card-title">Circuit Statistics</div>
                     <div class="stat-grid">
@@ -528,6 +740,22 @@ export class PanelManager {
             const comp = selection.component;
             if (!comp) return;
 
+            const liveExplainer = this._getLiveBehaviorExplanation(comp);
+            let liveCardHtml = '';
+            if (liveExplainer) {
+                liveCardHtml = `
+                    <div class="inspector-card" style="border-left: 3px solid ${liveExplainer.stateColor};">
+                        <div class="inspector-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:${liveExplainer.stateColor};">⚡ Live Hardware State</span>
+                            <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:3px; background:rgba(255,255,255,0.06); color:${liveExplainer.stateColor};">${liveExplainer.state}</span>
+                        </div>
+                        <div style="font-size:11.5px; line-height:1.45; color:var(--text-main);">
+                            ${liveExplainer.explanation}
+                        </div>
+                    </div>
+                `;
+            }
+
             const rtlInfo = this._getRtlMappingInfo(comp);
             let rtlCardHtml = '';
             if (rtlInfo) {
@@ -546,12 +774,13 @@ export class PanelManager {
             }
 
             inspectorContainer.innerHTML = `
+                ${liveCardHtml}
                 <div class="inspector-card">
                     <div class="inspector-card-title">
                         <span>Selected Component</span>
                         <button id="btn-delete-selected" class="btn btn-sm btn-danger">Delete</button>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
+                    <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
                         <div><strong>Type:</strong> ${comp.type}</div>
                         <div><strong>Label:</strong> ${comp.label}</div>
                         <div><strong>ID:</strong> <code style="font-size:10px;">${comp.id}</code></div>
@@ -574,15 +803,33 @@ export class PanelManager {
             const conn = selection.connection;
             if (!conn) return;
 
+            // Find source component to read live wire voltage
+            const srcComp = this.graph.getComponent(conn.fromComponent);
+            const srcVal = srcComp?.outputs[0]?.value ?? null;
+            const isHigh = srcVal === 1;
+
             inspectorContainer.innerHTML = `
+                <div class="inspector-card" style="border-left: 3px solid ${isHigh ? '#4ade80' : '#94a3b8'};">
+                    <div class="inspector-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:${isHigh ? '#4ade80' : 'var(--text-main)'};">⚡ Live Signal Net</span>
+                        <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:3px; background:rgba(255,255,255,0.06); color:${isHigh ? '#4ade80' : '#94a3b8'};">
+                            ${isHigh ? 'LOGIC HIGH (1 / VDD)' : 'LOGIC LOW (0 / GND)'}
+                        </span>
+                    </div>
+                    <div style="font-size:11.5px; line-height:1.45; color:var(--text-main);">
+                        Carrying <strong>${isHigh ? '3.3V / VDD (Logic 1)' : '0V / Ground (Logic 0)'}</strong>.
+                        In physical design, wires represent copper or aluminum interconnects etched into chip metal layers (M1–M8).
+                    </div>
+                </div>
+
                 <div class="inspector-card">
                     <div class="inspector-card-title">
                         <span>Selected Connection</span>
                         <button id="btn-delete-selected" class="btn btn-sm btn-danger">Delete</button>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
-                        <div><strong>From:</strong> <code>${conn.fromComponent}.${conn.fromPin}</code></div>
-                        <div><strong>To:</strong> <code>${conn.toComponent}.${conn.toPin}</code></div>
+                        <div><strong>From Pin:</strong> <code>${conn.fromComponent}.${conn.fromPin}</code></div>
+                        <div><strong>To Pin:</strong> <code>${conn.toComponent}.${conn.toPin}</code></div>
                     </div>
                 </div>
             `;

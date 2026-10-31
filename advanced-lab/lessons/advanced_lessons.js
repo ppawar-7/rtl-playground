@@ -194,7 +194,7 @@ Modulo counters are widely used for clock dividers, FIFO pointers, and baud rate
         ],
         physicalDesignNote: 'Counter rollover logic must be synthesized without glitches to prevent false triggers on downstream clock domains.',
         validate: (solution) => {
-            if (solution.tcAtCount === 5 || solution.modulo === 6) {
+            if (solution.tcAtCount === 5 && (solution.modulo === undefined || solution.modulo === 6)) {
                 return { success: true, message: 'Correct! Terminal count tc is asserted at count=5, right before rollover to 0.' };
             }
             return { success: false, message: 'For modulo-6 (0..5), terminal count asserts at count=5.' };

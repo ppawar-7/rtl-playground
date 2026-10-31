@@ -594,6 +594,11 @@ export class CircuitGraph extends EventEmitter {
         return [...this.components.values()].filter(c => c.type === 'OUTPUT');
     }
 
+    /** Get all components as an array */
+    getAllComponents() {
+        return [...this.components.values()];
+    }
+
     /** Get all CLOCK-type components */
     getClockComponents() {
         return [...this.components.values()].filter(c => c.type === 'CLOCK');

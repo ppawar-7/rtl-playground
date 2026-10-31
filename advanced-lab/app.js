@@ -135,6 +135,18 @@ class AdvancedRTLApp {
             <div class="lessons-list" style="margin-bottom: 28px;">
                 ${ADVANCED_LESSONS.map((l, idx) => {
                     const isDone = completed.has(l.id);
+                    const challengeInputsHtml = this._renderChallengeUI(l);
+                    const hintsHtml = (l.hints && l.hints.length > 0) ? `
+                        <div style="margin-top:6px;">
+                            <button class="btn-adv-hint" data-lesson-id="${l.id}" style="background:none; border:none; color:var(--accent-cyan); font-size:0.75rem; cursor:pointer; padding:0; text-decoration:underline;">
+                                💡 View Pedagogical Hint
+                            </button>
+                            <div id="adv-hint-${l.id}" style="display:none; margin-top:4px; padding:6px 8px; background:rgba(245,158,11,0.1); border-left:2px solid #f59e0b; border-radius:3px; font-size:0.78rem; color:#fde68a;">
+                                ${l.hints.map(h => `• ${h}`).join('<br>')}
+                            </div>
+                        </div>
+                    ` : '';
+
                     return `
                         <div class="lesson-card ${isDone ? 'completed' : ''}" id="card-${l.id}">
                             <div>
@@ -146,12 +158,14 @@ class AdvancedRTLApp {
                                 </div>
                                 <div class="lesson-title">${idx + 13}. ${l.title}</div>
                                 <div class="lesson-obj">${l.objective}</div>
-                                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 10px;">${l.challenge}</div>
+                                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 8px;">${l.challenge}</div>
+                                ${challengeInputsHtml}
+                                ${hintsHtml}
                             </div>
-                            <div>
+                            <div style="margin-top: 10px;">
                                 <div id="feedback-${l.id}" style="font-size: 0.8rem; margin-bottom: 8px;"></div>
                                 <button class="btn ${isDone ? 'btn-secondary' : 'btn-primary'} btn-block btn-solve" data-lesson-id="${l.id}">
-                                    ${isDone ? 'Review Solution' : 'Verify Challenge Solution'}
+                                    ${isDone ? '✓ Re-Verify Solution' : 'Verify Challenge Solution'}
                                 </button>
                             </div>
                         </div>
@@ -195,39 +209,227 @@ class AdvancedRTLApp {
             });
         }
 
+        // Attach hint toggle handlers
+        container.querySelectorAll('.btn-adv-hint').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lId = btn.dataset.lessonId;
+                const hintBox = container.querySelector(`#adv-hint-${lId}`);
+                if (hintBox) {
+                    const isOpen = hintBox.style.display !== 'none';
+                    hintBox.style.display = isOpen ? 'none' : 'block';
+                    btn.textContent = isOpen ? '💡 View Pedagogical Hint' : 'Hide Hint';
+                }
+            });
+        });
+
         // Attach verify handlers
         container.querySelectorAll('.btn-solve').forEach(btn => {
             btn.addEventListener('click', () => {
                 const lId = btn.dataset.lessonId;
                 const lesson = ADVANCED_LESSONS.find(x => x.id === lId);
                 if (lesson) {
-                    // Execute standard behavioral validator test
-                    const res = lesson.validate({
-                        upperMsb: 7, upperLsb: 4, lowerMsb: 3, lowerLsb: 0,
-                        pageBits: 4, offsetBits: 8, totalBits: 12,
-                        genStage0: true, propStage1: true,
-                        C: 0, V: 1,
-                        heldCorrectly: true, qFinal: 0x9,
-                        resetPriority: true,
-                        tcAtCount: 5, modulo: 6,
-                        finalParallel: 0b1011,
-                        nextState: 'S_101', detected: true,
-                        immediateType: 'MEALY', zeroLatencyType: 'MEALY',
-                        hasDefaultAssign: true, completeAssignment: true,
-                        clockPeriod: 10, expectedLatency: 2
-                    });
+                    // Collect actual student inputs from the challenge UI
+                    const studentSolution = this._collectUserSolution(lId);
+                    const res = lesson.validate(studentSolution);
 
                     const feedback = container.querySelector(`#feedback-${lId}`);
                     if (res.success) {
                         LessonProgressManager.markCompleted(lId);
-                        feedback.innerHTML = `<span style="color: #10b981;">✅ ${res.message}</span>`;
+                        feedback.innerHTML = `<span style="color: #10b981; font-weight:600;">✅ ${res.message}</span>`;
                         this.renderLessons();
                     } else {
-                        feedback.innerHTML = `<span style="color: #f43f5e;">❌ ${res.message}</span>`;
+                        feedback.innerHTML = `<span style="color: #f43f5e; font-weight:600;">❌ ${res.message}</span>`;
                     }
                 }
             });
         });
+    }
+
+    _renderChallengeUI(lesson) {
+        switch (lesson.id) {
+            case 'lesson_1_vectors_slicing':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Configure Slicing Ranges:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Upper Nibble: <code>data[</code><input type="number" id="inp-${lesson.id}-umsb" value="7" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"><code>:</code><input type="number" id="inp-${lesson.id}-ulsb" value="4" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"><code>]</code></div>
+                            <div>Lower Nibble: <code>data[</code><input type="number" id="inp-${lesson.id}-lmsb" value="3" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"><code>:</code><input type="number" id="inp-${lesson.id}-llsb" value="0" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"><code>]</code></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_2_concatenation':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Specify Operand & Result Bit-Widths:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Page width: <input type="number" id="inp-${lesson.id}-page" value="4" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"> bits</div>
+                            <div>Offset width: <input type="number" id="inp-${lesson.id}-offset" value="8" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"> bits</div>
+                            <div>Total address: <input type="number" id="inp-${lesson.id}-total" value="12" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"> bits</div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_3_ripple_carry':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Adder Stage Carry Logic:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Stage 0 (1 & 1): <select id="inp-${lesson.id}-s0" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="gen">Generates Carry (G=1)</option><option value="prop">Propagates (P=1)</option></select></div>
+                            <div>Stage 1 (0 ^ 1): <select id="inp-${lesson.id}-s1" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="prop">Propagates Carry (P=1)</option><option value="gen">Generates (G=1)</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_4_alu_flags':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Predict Condition Flags for 5 + 4 = 9 (4-bit signed/unsigned):</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Unsigned Carry: <select id="inp-${lesson.id}-c" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="0">C = 0 (No carry out > 15)</option><option value="1">C = 1 (Carry generated)</option></select></div>
+                            <div>Signed Overflow: <select id="inp-${lesson.id}-v" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="1">V = 1 (Positive + Positive = Negative!)</option><option value="0">V = 0 (No signed overflow)</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_5_registers_enable':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Register State Retention:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>When Clock Enable EN=0 and D changes: <select id="inp-${lesson.id}-hold" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="true">Retains previous state Q (Hold)</option><option value="false">Overwrites Q with D immediately</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_6_sync_reset':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Priority Resolution:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Simultaneous RST=1 and EN=1 on rising clock: <select id="inp-${lesson.id}-prio" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="true">Reset takes priority (Q <= 0)</option><option value="false">Enable takes priority (Q <= D)</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_7_modulo_counter':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Modulo-6 Counter Timing:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Terminal Count (tc) pulses HIGH at count: <input type="number" id="inp-${lesson.id}-tc" value="5" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"></div>
+                            <div>Modulo wrap-around modulus: <input type="number" id="inp-${lesson.id}-mod" value="6" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_8_shift_registers':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">4-Cycle Serial Shifting (Bits 1, 0, 1, 1):</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Resulting 4-bit Parallel Word: <select id="inp-${lesson.id}-shift" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="11">0b1011 (Hex 0xB / Decimal 11)</option><option value="13">0b1101 (Hex 0xD)</option><option value="0">0b0000</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_9_fsm_moore':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">101 Sequence Detector Transition:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>From state S_10, input bit 1 arrives: <select id="inp-${lesson.id}-fsm" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="S_101">Transition to S_101 (Pattern matched, out=1)</option><option value="S_RESET">Transition to S_RESET</option><option value="S_1">Transition to S_1</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_10_moore_vs_mealy':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">FSM Timing & Latency Analysis:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Zero-cycle combinational reaction: <select id="inp-${lesson.id}-fsmtype" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="MEALY">Mealy Machine (Output = f(State, Inputs) -> 0 latency)</option><option value="MOORE">Moore Machine (Output = f(State) -> 1 cycle registered)</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_11_latch_inference':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Synthesis Latch Prevention Rule:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>How to guarantee NO latches in always @(*): <select id="inp-${lesson.id}-latch" style="padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px;"><option value="true">Complete assignment on all branches + default assignments</option><option value="false">Omitting the terminating else branch</option></select></div>
+                        </div>
+                    </div>
+                `;
+            case 'lesson_12_testbench_basics':
+                return `
+                    <div class="challenge-ui" style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.8rem;">
+                        <div style="margin-bottom: 4px; font-weight:600; color:#38bdf8;">Testbench Stimulus Configuration:</div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <div>Clock Period: <input type="number" id="inp-${lesson.id}-period" value="10" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"> time units</div>
+                            <div>2-Stage Pipeline Latency: <input type="number" id="inp-${lesson.id}-latency" value="2" style="width:36px; padding:2px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:3px; text-align:center;"> clock cycles</div>
+                        </div>
+                    </div>
+                `;
+            default:
+                return '';
+        }
+    }
+
+    _collectUserSolution(lId) {
+        switch (lId) {
+            case 'lesson_1_vectors_slicing':
+                return {
+                    upperMsb: parseInt(document.getElementById(`inp-${lId}-umsb`)?.value || '0', 10),
+                    upperLsb: parseInt(document.getElementById(`inp-${lId}-ulsb`)?.value || '0', 10),
+                    lowerMsb: parseInt(document.getElementById(`inp-${lId}-lmsb`)?.value || '0', 10),
+                    lowerLsb: parseInt(document.getElementById(`inp-${lId}-llsb`)?.value || '0', 10)
+                };
+            case 'lesson_2_concatenation':
+                return {
+                    pageBits: parseInt(document.getElementById(`inp-${lId}-page`)?.value || '0', 10),
+                    offsetBits: parseInt(document.getElementById(`inp-${lId}-offset`)?.value || '0', 10),
+                    totalBits: parseInt(document.getElementById(`inp-${lId}-total`)?.value || '0', 10)
+                };
+            case 'lesson_3_ripple_carry':
+                return {
+                    genStage0: document.getElementById(`inp-${lId}-s0`)?.value === 'gen',
+                    propStage1: document.getElementById(`inp-${lId}-s1`)?.value === 'prop'
+                };
+            case 'lesson_4_alu_flags':
+                return {
+                    C: parseInt(document.getElementById(`inp-${lId}-c`)?.value || '0', 10),
+                    V: parseInt(document.getElementById(`inp-${lId}-v`)?.value || '0', 10)
+                };
+            case 'lesson_5_registers_enable':
+                return {
+                    heldCorrectly: document.getElementById(`inp-${lId}-hold`)?.value === 'true'
+                };
+            case 'lesson_6_sync_reset':
+                return {
+                    resetPriority: document.getElementById(`inp-${lId}-prio`)?.value === 'true'
+                };
+            case 'lesson_7_modulo_counter':
+                return {
+                    tcAtCount: parseInt(document.getElementById(`inp-${lId}-tc`)?.value || '0', 10),
+                    modulo: parseInt(document.getElementById(`inp-${lId}-mod`)?.value || '0', 10)
+                };
+            case 'lesson_8_shift_registers':
+                return {
+                    finalParallel: parseInt(document.getElementById(`inp-${lId}-shift`)?.value || '0', 10)
+                };
+            case 'lesson_9_fsm_moore':
+                return {
+                    nextState: document.getElementById(`inp-${lId}-fsm`)?.value || ''
+                };
+            case 'lesson_10_moore_vs_mealy':
+                return {
+                    immediateType: document.getElementById(`inp-${lId}-fsmtype`)?.value || ''
+                };
+            case 'lesson_11_latch_inference':
+                return {
+                    hasDefaultAssign: document.getElementById(`inp-${lId}-latch`)?.value === 'true',
+                    completeAssignment: document.getElementById(`inp-${lId}-latch`)?.value === 'true'
+                };
+            case 'lesson_12_testbench_basics':
+                return {
+                    clockPeriod: parseInt(document.getElementById(`inp-${lId}-period`)?.value || '0', 10),
+                    expectedLatency: parseInt(document.getElementById(`inp-${lId}-latency`)?.value || '0', 10)
+                };
+            default:
+                return {};
+        }
     }
 
     setupVerilogTab() {

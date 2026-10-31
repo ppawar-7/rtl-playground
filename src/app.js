@@ -39,6 +39,16 @@ export class RTLPlaygroundApp {
 
         this._setupEvents();
         this._loadDefaultCircuit();
+        this.tour = new QuickTourController();
+
+        // Check if user is visiting for the first time
+        try {
+            if (!localStorage.getItem('rtl_tour_seen')) {
+                setTimeout(() => {
+                    this.tour.open();
+                }, 500);
+            }
+        } catch {}
     }
 
     _setupEvents() {
@@ -156,6 +166,139 @@ export class RTLPlaygroundApp {
             if (lessonTabBtn) lessonTabBtn.click();
             const targetLesson = this.lessons.getLessonById ? this.lessons.getLessonById(urlLesson) : null;
             if (targetLesson) this.lessons.openLesson(targetLesson);
+        }
+    }
+}
+
+export class QuickTourController {
+    constructor() {
+        this.modal = document.getElementById('tour-modal');
+        this.titleEl = document.getElementById('tour-step-title');
+        this.contentEl = document.getElementById('tour-step-content');
+        this.dotsEl = document.getElementById('tour-dots');
+        this.prevBtn = document.getElementById('btn-tour-prev');
+        this.nextBtn = document.getElementById('btn-tour-next');
+        this.closeBtn = document.getElementById('btn-tour-close');
+
+        this.currentStep = 0;
+        this.steps = [
+            {
+                title: 'Welcome to RTL Playground! 👋',
+                icon: '🚀',
+                html: `
+                    <p style="margin-bottom:10px;">RTL (Register-Transfer Level) is how digital chips and microprocessors are designed across the world!</p>
+                    <p style="margin-bottom:10px;">In this playground, you can build electronic circuits using logic gates (AND, OR, NOT, XOR) and flip-flops, simulate signals live, and see real synthesizable Verilog code generated instantly.</p>
+                    <div style="padding:8px 12px; background:rgba(56,189,248,0.1); border-left:3px solid var(--accent-primary); border-radius:4px; font-size:12px;">
+                        💡 <strong>Zero experience needed!</strong> Follow the guided lessons to learn step by step.
+                    </div>
+                `
+            },
+            {
+                title: 'Interacting with the Canvas 🖱️',
+                icon: '🛠️',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div><strong>1. Left Palette:</strong> Click & drag any logic gate, switch, or clock from the Palette onto the canvas.</div>
+                        <div><strong>2. Toggle Inputs:</strong> Click input switches (A, B) directly on the canvas to flip between <strong>0 (LOW)</strong> and <strong>1 (HIGH)</strong>.</div>
+                        <div><strong>3. Wiring:</strong> Click and drag from any output circle pin to an input circle pin to connect wires!</div>
+                        <div><strong>4. Delete:</strong> Click any component or wire and press Delete or the trash button in the Inspector.</div>
+                    </div>
+                `
+            },
+            {
+                title: 'Understanding Signals & Clocks ⚡',
+                icon: '💡',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div><strong style="color:#4ade80;">● Glowing Green Wires:</strong> Logic 1 (HIGH / 3.3V power). Electricity is active!</div>
+                        <div><strong style="color:#94a3b8;">● Slate Gray Wires:</strong> Logic 0 (LOW / 0V Ground). No active voltage.</div>
+                        <div><strong style="color:#38bdf8;">● Clock Pulse:</strong> Flip-flops update only on the rising clock edge. Step the clock in the <strong>Waveform Viewer</strong> tab below to watch data flow!</div>
+                    </div>
+                `
+            },
+            {
+                title: 'Guided Lessons & Verilog Code 🎓',
+                icon: '📚',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div><strong>Lessons Tab:</strong> Click the <strong>Lessons</strong> tab in the left panel to access 12 guided challenges with live micro-step checklists and hints.</div>
+                        <div><strong>Generated Verilog Tab:</strong> View industry-standard hardware description code generated live for your circuit!</div>
+                        <div><strong>Ready to build?</strong> Let's start with Lesson 1: Understanding Logic Gates!</div>
+                    </div>
+                `
+            }
+        ];
+
+        this.init();
+    }
+
+    init() {
+        if (!this.modal) return;
+
+        this.closeBtn?.addEventListener('click', () => this.close());
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) this.close();
+        });
+
+        this.prevBtn?.addEventListener('click', () => {
+            if (this.currentStep > 0) {
+                this.currentStep--;
+                this.render();
+            }
+        });
+
+        this.nextBtn?.addEventListener('click', () => {
+            if (this.currentStep < this.steps.length - 1) {
+                this.currentStep++;
+                this.render();
+            } else {
+                this.close();
+                const lessonTabBtn = document.querySelector('.sidebar-tab-btn[data-tab="lessons"]');
+                if (lessonTabBtn) lessonTabBtn.click();
+                if (window.app?.lessons) {
+                    const l1 = window.app.lessons.getLessonById('lesson-1-gates');
+                    if (l1) window.app.lessons.openLesson(l1);
+                }
+            }
+        });
+
+        const tourBtn = document.getElementById('btn-quick-tour');
+        if (tourBtn) {
+            tourBtn.addEventListener('click', () => this.open());
+        }
+        window.openQuickTour = () => this.open();
+    }
+
+    open() {
+        this.currentStep = 0;
+        this.render();
+        if (this.modal) this.modal.style.display = 'flex';
+        try { localStorage.setItem('rtl_tour_seen', 'true'); } catch {}
+    }
+
+    close() {
+        if (this.modal) this.modal.style.display = 'none';
+    }
+
+    render() {
+        const step = this.steps[this.currentStep];
+        if (!step) return;
+
+        if (this.titleEl) this.titleEl.textContent = step.title;
+        if (this.contentEl) this.contentEl.innerHTML = step.html;
+
+        if (this.prevBtn) {
+            this.prevBtn.style.display = this.currentStep === 0 ? 'none' : 'inline-block';
+        }
+
+        if (this.nextBtn) {
+            this.nextBtn.textContent = this.currentStep === this.steps.length - 1 ? 'Start Lesson 1 🚀' : 'Next →';
+        }
+
+        if (this.dotsEl) {
+            this.dotsEl.innerHTML = this.steps.map((_, idx) => `
+                <div class="tour-dot ${idx === this.currentStep ? 'active' : ''}"></div>
+            `).join('');
         }
     }
 }

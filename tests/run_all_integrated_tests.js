@@ -20,6 +20,7 @@ const ROOT = resolve(__dirname, '..');
 
 const suites = [
     { name: 'RTL Fundamentals & Phase 6 Unit Tests', file: 'tests/tests.js' },
+    { name: 'Beginner Experience & Micro-Steps Verification', file: 'tests/test_beginner_experience.js', isTestRunner: true },
     { name: 'Advanced RTL Lab Regression & Property Tests', file: 'tests/advanced/run_all_tests.js' },
     { name: 'Full Yosys HDL Synthesis & AST Checks (17 modules)', file: 'tests/verilog_verification/run_yosys_verification.js' },
     { name: 'Icarus Verilog Functional Event-Driven Simulation (17 suites)', file: 'tests/verilog_verification/run_iverilog_simulation.js' },
@@ -37,7 +38,8 @@ for (const suite of suites) {
     const fullPath = resolve(ROOT, suite.file);
     console.log(`\n▶ Starting Suite: ${suite.name}...`);
     const start = Date.now();
-    const res = spawnSync(process.execPath, [fullPath], {
+    const args = suite.isTestRunner ? ['--test', fullPath] : [fullPath];
+    const res = spawnSync(process.execPath, args, {
         cwd: ROOT,
         stdio: 'inherit'
     });

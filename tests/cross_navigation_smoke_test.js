@@ -166,6 +166,7 @@ async function runNavigationAudit() {
     await cdp.send('Runtime.enable');
 
     console.log(`  [Page] Navigating to ${BASE_URL}...`);
+    await cdp.send('Page.navigate', { url: BASE_URL });
     await sleep(800);
 
     // Step 1: Verify RTL Fundamentals landing

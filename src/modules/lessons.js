@@ -8,6 +8,10 @@
  * @module Lessons
  */
 
+import { PRESETS } from './presets.js';
+
+const getComps = (graph) => (graph.getAllComponents ? graph.getAllComponents() : Array.from(graph.components.values()));
+
 export const LESSONS = [
     {
         id: 'lesson-1-gates',
@@ -20,7 +24,9 @@ export const LESSONS = [
             An <strong>AND gate</strong> outputs logic <strong>1</strong> if and only if <strong>both</strong> inputs are logic 1.
             If any input is 0, the output evaluates to 0.
         `,
-        task: 'Add two Input components, one AND gate, and one Output component. Connect them and verify that Y produces logic 1 only when both A and B are 1.',
+        whatIsHappening: 'In physical CMOS silicon, an AND gate is built from a NAND gate followed by an Inverter. When both inputs A and B are HIGH (VDD voltage), two series NMOS transistors conduct, pulling the internal node to ground, which the inverter flips to a strong HIGH output (1). If either input is LOW (0V), the output is driven LOW (0).',
+        task: 'Add an AND gate between inputs A and B, add an Output Y, wire them together, and test all 4 combinations by clicking the input switches.',
+        solutionPreset: 'and-gate',
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 80, value: 0 },
@@ -28,6 +34,56 @@ export const LESSONS = [
             ],
             connections: []
         },
+        steps: [
+            {
+                id: 'l1_step1',
+                text: 'Drag an AND gate from the Palette on the left into the workspace canvas.',
+                hint: 'Look under "Logic Gates" in the left sidebar. Click and drag the "AND" box onto the center of the canvas.',
+                check: (graph) => getComps(graph).some(c => c.type === 'AND')
+            },
+            {
+                id: 'l1_step2',
+                text: 'Wire Input A to the first input of the AND gate.',
+                hint: 'Click the small circular pin on the right edge of Input A, drag your mouse to the top-left pin of the AND gate, and release.',
+                check: (graph) => {
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const inA = graph.getInputComponents()[0];
+                    return !!(and && inA && and.inputs[0].connectedTo && and.inputs[0].connectedTo.componentId === inA.id);
+                }
+            },
+            {
+                id: 'l1_step3',
+                text: 'Wire Input B to the second input of the AND gate.',
+                hint: 'Click the circle pin on the right edge of Input B, drag to the bottom-left pin of the AND gate, and release.',
+                check: (graph) => {
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const inB = graph.getInputComponents()[1];
+                    return !!(and && inB && and.inputs[1].connectedTo && and.inputs[1].connectedTo.componentId === inB.id);
+                }
+            },
+            {
+                id: 'l1_step4',
+                text: 'Add an Output component and wire the AND gate output to it.',
+                hint: 'In the Palette under "IO Components", drag "Output" to the right of the AND gate. Connect the AND gate\'s right output pin to the Output\'s input pin.',
+                check: (graph) => {
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const outputs = graph.getOutputComponents();
+                    return !!(and && outputs.length > 0 && outputs.some(o => o.inputs[0].connectedTo && o.inputs[0].connectedTo.componentId === and.id));
+                }
+            },
+            {
+                id: 'l1_step5',
+                text: 'Interactive Test: Click Input A and B to set both to 1. Verify Output Y turns bright green (1).',
+                hint: 'Click directly on the "0" box of Input A and Input B on the canvas to toggle them to 1. When both are 1, the wire and Output turn green!',
+                check: (graph, simulator) => {
+                    const inputs = graph.getInputComponents();
+                    const outputs = graph.getOutputComponents();
+                    if (inputs.length < 2 || outputs.length === 0) return false;
+                    const res = simulator.evaluateWithInputs({ [inputs[0].id]: 1, [inputs[1].id]: 1 });
+                    return !!(res.ok && res.outputs[outputs[0].id] === 1);
+                }
+            }
+        ],
         validate: (graph, simulator) => {
             const inputs = graph.getInputComponents();
             const outputs = graph.getOutputComponents();
@@ -82,11 +138,13 @@ export const LESSONS = [
             A <strong>Half Adder</strong> is the basic building block of arithmetic logic units (ALUs).
             It adds two 1-bit binary numbers:
             <ul>
-                <li><strong>SUM</strong> bit is generated by an <strong>XOR</strong> gate (1 when inputs differ).</li>
-                <li><strong>CARRY</strong> bit is generated by an <strong>AND</strong> gate (1 when both inputs are 1).</li>
+                <li><strong>SUM</strong> bit is generated by an <strong>XOR</strong> gate (1 when inputs differ: 0+1=1, 1+0=1).</li>
+                <li><strong>CARRY</strong> bit is generated by an <strong>AND</strong> gate (1 when both inputs are 1: 1+1=10₂).</li>
             </ul>
         `,
+        whatIsHappening: 'In binary math, 1 + 1 equals 2 (written as 10 in binary). The right bit is SUM (0) and the left bit is CARRY (1). The XOR gate detects when exactly one input is 1, while the AND gate detects when an overflow to the next bit column is required.',
         task: 'Add an XOR gate for SUM and an AND gate for CARRY. Connect inputs A and B to both gates, and connect each gate to its respective output.',
+        solutionPreset: 'half-adder',
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 70, value: 0 },
@@ -96,6 +154,63 @@ export const LESSONS = [
             ],
             connections: []
         },
+        steps: [
+            {
+                id: 'l2_step1',
+                text: 'Place an XOR gate and an AND gate on the canvas.',
+                hint: 'Drag "XOR" and "AND" from Logic Gates in the left Palette onto the canvas between the inputs and outputs.',
+                check: (graph) => getComps(graph).some(c => c.type === 'XOR') && getComps(graph).find(c => c.type === 'AND')
+            },
+            {
+                id: 'l2_step2',
+                text: 'Connect Input A to both the XOR gate and the AND gate.',
+                hint: 'Drag a wire from Input A pin to XOR pin 1, and another wire from Input A to AND pin 1 (fan-out).',
+                check: (graph) => {
+                    const xor = getComps(graph).find(c => c.type === 'XOR');
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const inA = graph.getInputComponents()[0];
+                    return !!(xor && and && inA && xor.inputs[0].connectedTo?.componentId === inA.id && and.inputs[0].connectedTo?.componentId === inA.id);
+                }
+            },
+            {
+                id: 'l2_step3',
+                text: 'Connect Input B to both the XOR gate and the AND gate.',
+                hint: 'Drag a wire from Input B pin to XOR pin 2, and another wire from Input B to AND pin 2.',
+                check: (graph) => {
+                    const xor = getComps(graph).find(c => c.type === 'XOR');
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const inB = graph.getInputComponents()[1];
+                    return !!(xor && and && inB && xor.inputs[1].connectedTo?.componentId === inB.id && and.inputs[1].connectedTo?.componentId === inB.id);
+                }
+            },
+            {
+                id: 'l2_step4',
+                text: 'Wire the XOR output to SUM, and the AND output to CARRY.',
+                hint: 'Drag a wire from the XOR output pin to the SUM output component, and from the AND output to the CARRY output component.',
+                check: (graph) => {
+                    const xor = getComps(graph).find(c => c.type === 'XOR');
+                    const and = getComps(graph).find(c => c.type === 'AND');
+                    const outputs = graph.getOutputComponents();
+                    const sumOut = outputs.find(o => o.label.toUpperCase().includes('SUM')) || outputs[0];
+                    const carryOut = outputs.find(o => o.label.toUpperCase().includes('CARRY')) || outputs[1];
+                    return !!(xor && and && sumOut?.inputs[0].connectedTo?.componentId === xor.id && carryOut?.inputs[0].connectedTo?.componentId === and.id);
+                }
+            },
+            {
+                id: 'l2_step5',
+                text: 'Test Binary Addition: Set A=1, B=1. Verify SUM=0 and CARRY=1 (1 + 1 = 2).',
+                hint: 'Click Input A and Input B to set both to 1. SUM should turn gray (0) and CARRY should turn green (1)!',
+                check: (graph, simulator) => {
+                    const inputs = graph.getInputComponents();
+                    const outputs = graph.getOutputComponents();
+                    if (inputs.length < 2 || outputs.length < 2) return false;
+                    const res = simulator.evaluateWithInputs({ [inputs[0].id]: 1, [inputs[1].id]: 1 });
+                    const sumOut = outputs.find(o => o.label.toUpperCase().includes('SUM')) || outputs[0];
+                    const carryOut = outputs.find(o => o.label.toUpperCase().includes('CARRY')) || outputs[1];
+                    return !!(res.ok && res.outputs[sumOut.id] === 0 && res.outputs[carryOut.id] === 1);
+                }
+            }
+        ],
         validate: (graph, simulator) => {
             const inputs = graph.getInputComponents();
             const outputs = graph.getOutputComponents();
@@ -159,7 +274,9 @@ export const LESSONS = [
             Multiplexers (MUXes) are the data selectors of digital systems.
             They implement conditional routing in hardware, equivalent to Verilog's ternary operator <code>assign y = sel ? b : a;</code> or <code>if (sel) y = b; else y = a;</code>.
         `,
-        task: 'Place a 2:1 MUX component. Connect input A to port 0, input B to port 1, input Sel to the selection pin, and route the output to Y.',
+        whatIsHappening: 'In hardware, a 2:1 MUX acts as an electronic selector switch. When Sel=0, data passes from pin A to output Y. When Sel=1, data passes from pin B to output Y. In ASIC synthesis, this continuous dataflow models transmission gates or standard multiplexer cells.',
+        task: 'Place a 2:1 MUX component. Connect input A to port 0, input B to port 1, input Sel to the selection pin (bottom), and route the output to Y.',
+        solutionPreset: 'mux-2to1',
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 60, value: 0 },
@@ -169,6 +286,54 @@ export const LESSONS = [
             ],
             connections: []
         },
+        steps: [
+            {
+                id: 'l3_step1',
+                text: 'Place a 2:1 MUX (MUX2) component on the canvas.',
+                hint: 'Look under "Selection Logic" in the left Palette. Drag the "MUX2" component into the center between the inputs and output Y.',
+                check: (graph) => getComps(graph).some(c => c.type === 'MUX2')
+            },
+            {
+                id: 'l3_step2',
+                text: 'Connect Input A to port in0 (top-left) of the MUX.',
+                hint: 'Drag a wire from Input A (right pin) to the top input pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inA = graph.getInputComponents().find(i => i.label.toUpperCase() === 'A');
+                    return !!(mux && inA && mux.inputs[0].connectedTo?.componentId === inA.id);
+                }
+            },
+            {
+                id: 'l3_step3',
+                text: 'Connect Input B to port in1 (middle-left) of the MUX.',
+                hint: 'Drag a wire from Input B (right pin) to the second input pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inB = graph.getInputComponents().find(i => i.label.toUpperCase() === 'B');
+                    return !!(mux && inB && mux.inputs[1].connectedTo?.componentId === inB.id);
+                }
+            },
+            {
+                id: 'l3_step4',
+                text: 'Connect Input Sel to select port in2 (bottom pin) of the MUX.',
+                hint: 'Drag a wire from Input Sel (right pin) to the bottom pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inSel = graph.getInputComponents().find(i => i.label.toUpperCase().includes('SEL'));
+                    return !!(mux && inSel && mux.inputs[2].connectedTo?.componentId === inSel.id);
+                }
+            },
+            {
+                id: 'l3_step5',
+                text: 'Connect MUX output out0 to Output Y.',
+                hint: 'Drag a wire from the right output pin of the MUX2 component to the input pin of Output Y.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const outY = graph.getOutputComponents()[0];
+                    return !!(mux && outY && outY.inputs[0].connectedTo?.componentId === mux.id);
+                }
+            }
+        ],
         validate: (graph, simulator) => {
             const inputs = graph.getInputComponents();
             const outputs = graph.getOutputComponents();
@@ -227,7 +392,9 @@ export const LESSONS = [
             A <strong>D Flip-Flop (DFF)</strong> samples data input D only when the clock transitions from <strong>0 to 1</strong> (the rising edge).
             Between rising edges, the stored output Q remains unchanged even if D changes!
         `,
-        task: 'Step through the clock using the "Clock Step" button in the Waveform Viewer tab. Change D while the clock is high or low and observe that Q remains unchanged until the next rising clock edge.',
+        whatIsHappening: 'A D Flip-Flop consists of Master and Slave latches. When the clock rises from 0 to 1, the Master locks in the current value of input D, and the Slave propagates it to output Q. State updates happen in lockstep with the clock frequency, forming the basis of all synchronous digital microprocessors.',
+        task: 'Open the "Waveform Viewer" tab below, click "Clock Step" twice to observe rising and falling clock edges, and verify that Q only updates on posedge clk.',
+        solutionPreset: 'dff-demo',
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 80, y: 90, value: 1 },
@@ -241,6 +408,41 @@ export const LESSONS = [
                 { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'out_q', toPin: 'out_q.in0' }
             ]
         },
+        steps: [
+            {
+                id: 'l4_step1',
+                text: 'Verify Circuit Wiring: DFF is connected to D input, CLK clock, and Output Q.',
+                hint: 'The starter circuit is already wired for you! Input D goes to pin D, Clock goes to pin CLK, and pin Q goes to Output.',
+                check: (graph) => {
+                    const dff = graph.getDFFComponents()[0];
+                    return !!(dff && dff.inputs[0].connectedTo && dff.inputs[1].connectedTo);
+                }
+            },
+            {
+                id: 'l4_step2',
+                text: 'Open the "Waveform Viewer" tab in the bottom drawer.',
+                hint: 'Click the "Waveform Viewer" tab at the bottom of the screen to open the timing diagram viewer.',
+                check: () => true
+            },
+            {
+                id: 'l4_step3',
+                text: 'Click "Clock Step" to create a rising clock edge (CLK: 0 -> 1).',
+                hint: 'In the Waveform Viewer panel, find and click the "Clock Step" button. Watch the CLK signal rise to 1 and Q capture 1.',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 1 : false)
+            },
+            {
+                id: 'l4_step4',
+                text: 'Click "Clock Step" again to return CLK to 0 and complete 1 full clock cycle.',
+                hint: 'Click "Clock Step" a second time so the clock finishes its square pulse back to 0.',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            },
+            {
+                id: 'l4_step5',
+                text: 'Observe State Retention: Toggle Input D to 0 and notice Q stays 1 until next clock edge!',
+                hint: 'Click Input D on the canvas. Notice the wire to D turns gray (0), but Output Q stays green (1) because no rising clock edge occurred!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffs = graph.getDFFComponents();
             if (dffs.length === 0) {
@@ -298,7 +500,9 @@ export const LESSONS = [
             In synthesizable Verilog, this is written as continuous assignment <code>assign y = sel ? b : a;</code> or procedural <code>if/else</code>.
             When <strong>Sel is 0</strong>, path A is selected. When <strong>Sel is 1</strong>, path B is selected.
         `,
+        whatIsHappening: 'In Verilog, conditional selection is expressed as assign y = sel ? b : a; (ternary operator) or procedural if (sel) y = b; else y = a;. In physical silicon, logic synthesis compilers map both descriptions into a standard multiplexer library cell.',
         task: 'Connect inputs A and B to the data pins of the 2:1 MUX, connect Sel to the select pin (bottom), and route the output to Y. Verify across all 8 truth table combinations.',
+        solutionPreset: 'mux-cond',
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 70, value: 0 },
@@ -309,6 +513,54 @@ export const LESSONS = [
             ],
             connections: []
         },
+        steps: [
+            {
+                id: 'l5_step1',
+                text: 'Wire Input A to MUX pin in0 (port 0).',
+                hint: 'Drag a wire from Input A (right pin) to the top input pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inA = graph.getInputComponents().find(i => i.label.toUpperCase() === 'A');
+                    return !!(mux && inA && mux.inputs[0].connectedTo?.componentId === inA.id);
+                }
+            },
+            {
+                id: 'l5_step2',
+                text: 'Wire Input B to MUX pin in1 (port 1).',
+                hint: 'Drag a wire from Input B (right pin) to the second input pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inB = graph.getInputComponents().find(i => i.label.toUpperCase() === 'B');
+                    return !!(mux && inB && mux.inputs[1].connectedTo?.componentId === inB.id);
+                }
+            },
+            {
+                id: 'l5_step3',
+                text: 'Wire Input Sel to MUX pin in2 (select pin at the bottom).',
+                hint: 'Drag a wire from Input Sel (right pin) to the bottom pin of the MUX2 component.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inSel = graph.getInputComponents().find(i => i.label.toUpperCase().includes('SEL'));
+                    return !!(mux && inSel && mux.inputs[2].connectedTo?.componentId === inSel.id);
+                }
+            },
+            {
+                id: 'l5_step4',
+                text: 'Wire MUX output out0 to Output Y.',
+                hint: 'Drag a wire from the right output pin of the MUX2 component to the input pin of Output Y.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const outY = graph.getOutputComponents()[0];
+                    return !!(mux && outY && outY.inputs[0].connectedTo?.componentId === mux.id);
+                }
+            },
+            {
+                id: 'l5_step5',
+                text: 'Inspect Generated Verilog: Open the "Generated Verilog" tab below to observe assign y = sel ? b : a.',
+                hint: 'Click the "Generated Verilog" tab at the bottom to view the synthesizable HDL code.',
+                check: () => true
+            }
+        ],
         validate: (graph, simulator) => {
             const inputs = graph.getInputComponents();
             const outputs = graph.getOutputComponents();
@@ -367,7 +619,9 @@ export const LESSONS = [
             <code>always @(posedge clk) if (en) q &lt;= d;</code>
             When EN is 0, the previous Q is fed back into D, holding state safely.
         `,
+        whatIsHappening: 'In physical ASIC cell libraries, clock gating using external logic gates creates clock skew and clock tree violations. Instead, hardware designers implement clock enable using an input multiplexer that loops output Q back to data input D when EN=0. The flip-flop still receives a clean, un-gated clock pulse, but safely re-loads its own current value!',
         task: 'Wire the circuit: connect D to MUX in1, loop DFF Q back to MUX in0, connect EN to MUX select, and route MUX output to DFF data in. Step the clock in Waveform tab to verify that D is ignored when EN=0.',
+        solutionPreset: 'reg-enable',
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -382,6 +636,54 @@ export const LESSONS = [
                 { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
             ]
         },
+        steps: [
+            {
+                id: 'l6_step1',
+                text: 'Connect MUX output to the DFF data input.',
+                hint: 'Drag a wire from the MUX output pin (right side) to DFF input pin D (top-left pin).',
+                check: (graph) => {
+                    const dff = graph.getDFFComponents()[0];
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    return !!(dff && mux && dff.inputs[0].connectedTo?.componentId === mux.id);
+                }
+            },
+            {
+                id: 'l6_step2',
+                text: 'Wire the Recirculating Loop: Connect DFF output Q back to MUX pin in0.',
+                hint: 'Drag a wire from DFF output pin Q (or Output Q) back to port in0 (top-left) of the MUX. This retains state when EN=0!',
+                check: (graph) => {
+                    const dff = graph.getDFFComponents()[0];
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    return !!(dff && mux && mux.inputs[0].connectedTo?.componentId === dff.id);
+                }
+            },
+            {
+                id: 'l6_step3',
+                text: 'Connect Input D to MUX pin in1 (new data load path).',
+                hint: 'Drag a wire from Input D to port in1 (middle-left pin) of the MUX.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inD = graph.getInputComponents().find(i => i.label.toUpperCase() === 'D');
+                    return !!(mux && inD && mux.inputs[1].connectedTo?.componentId === inD.id);
+                }
+            },
+            {
+                id: 'l6_step4',
+                text: 'Connect Input EN to MUX select pin in2 (bottom pin).',
+                hint: 'Drag a wire from Input EN to the select pin (bottom) of the MUX.',
+                check: (graph) => {
+                    const mux = getComps(graph).find(c => c.type === 'MUX2');
+                    const inEn = graph.getInputComponents().find(i => i.label.toUpperCase() === 'EN');
+                    return !!(mux && inEn && mux.inputs[2].connectedTo?.componentId === inEn.id);
+                }
+            },
+            {
+                id: 'l6_step5',
+                text: 'Step Clock in Waveform Tab: With EN=0, pulse the clock to observe state retention (Q holds 0).',
+                hint: 'Go to the Waveform Viewer tab and click "Clock Step" twice. When EN=0, D=1 is safely ignored!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffs = graph.getDFFComponents();
             const muxes = Array.from(graph.components.values()).filter(c => c.type === 'MUX2');
@@ -469,7 +771,9 @@ export const LESSONS = [
             <code>always @(posedge clk) begin if (rst) q &lt;= 1'b0; else q &lt;= d; end</code>
             In gate-level synthesis, this maps to an AND gate with inverted reset: <code>D_eff = D &amp; (~RST)</code>.
         `,
-        task: 'Wire the circuit: route RST through the NOT gate into an AND gate. Route data input D into the other AND gate input. Connect AND output to DFF data input. Verify that RST=1 synchronously forces Q to 0 on the next clock edge.',
+        whatIsHappening: 'In physical chips, synchronous reset ensures registers only clear their state on the rising clock edge (0→1). This eliminates unpredictable transient glitches and metastability. In logic gates, this is built using an inverter and an AND gate: D_effective = D & (~RST). When RST is 1, the inverted signal is 0, forcing the AND gate to 0 so the flip-flop captures 0 on the next clock pulse.',
+        task: 'Route RST into the NOT gate. Connect the NOT gate output and Input D to the AND gate. Connect the AND gate output to the DFF data input. Step the clock with RST=1 in the Waveform Viewer to verify that Q synchronously resets to 0.',
+        solutionPreset: 'reg-sync-reset',
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -485,6 +789,54 @@ export const LESSONS = [
                 { fromComponent: 'dff_1', fromPin: 'dff_1.out0', toComponent: 'output_q', toPin: 'output_q.in0' }
             ]
         },
+        steps: [
+            {
+                id: 'l7_step1',
+                text: 'Wire Input RST into the NOT gate input pin.',
+                hint: 'Drag a wire from Input RST (right pin) to the input pin of the NOT gate.',
+                check: (graph) => {
+                    const notGate = getComps(graph).find(c => c.type === 'NOT');
+                    const inRst = graph.getInputComponents().find(i => i.label.toUpperCase() === 'RST');
+                    return !!(notGate && inRst && notGate.inputs[0].connectedTo?.componentId === inRst.id);
+                }
+            },
+            {
+                id: 'l7_step2',
+                text: 'Wire Input D to the top input (in0) of the AND gate.',
+                hint: 'Drag a wire from Input D (right pin) to the top input pin of the AND gate.',
+                check: (graph) => {
+                    const andGate = getComps(graph).find(c => c.type === 'AND');
+                    const inD = graph.getInputComponents().find(i => i.label.toUpperCase() === 'D');
+                    return !!(andGate && inD && (andGate.inputs[0].connectedTo?.componentId === inD.id || andGate.inputs[1].connectedTo?.componentId === inD.id));
+                }
+            },
+            {
+                id: 'l7_step3',
+                text: 'Wire the NOT gate output to the other input of the AND gate.',
+                hint: 'Drag a wire from the right output pin of the NOT gate to the second input pin of the AND gate.',
+                check: (graph) => {
+                    const andGate = getComps(graph).find(c => c.type === 'AND');
+                    const notGate = getComps(graph).find(c => c.type === 'NOT');
+                    return !!(andGate && notGate && (andGate.inputs[0].connectedTo?.componentId === notGate.id || andGate.inputs[1].connectedTo?.componentId === notGate.id));
+                }
+            },
+            {
+                id: 'l7_step4',
+                text: 'Wire the AND gate output to the DFF data input (pin D).',
+                hint: 'Drag a wire from the right output pin of the AND gate to the top-left pin (in0) of the DFF.',
+                check: (graph) => {
+                    const dff = graph.getDFFComponents()[0];
+                    const andGate = getComps(graph).find(c => c.type === 'AND');
+                    return !!(dff && andGate && dff.inputs[0].connectedTo?.componentId === andGate.id);
+                }
+            },
+            {
+                id: 'l7_step5',
+                text: 'Step Clock in Waveform Viewer: Set RST=1 and pulse the clock to observe synchronous clearing.',
+                hint: 'Toggle RST to 1. Open the Waveform Viewer tab and click "Clock Step" twice. Notice Q is forced to 0!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffs = graph.getDFFComponents();
             const clocks = graph.getClockComponents();
@@ -558,7 +910,9 @@ export const LESSONS = [
             In a 2-stage pipeline ($D \\to \\text{DFF}_1 \\to \\text{DFF}_2$), a pulse on D appears at $Q_1$ on cycle 1, and at $Q_2$ on cycle 2.
             This cycle-by-cycle pipeline isolation allows ASICs to run at high clock frequencies.
         `,
-        task: 'Connect input D to DFF1, DFF1 Q to DFF2 D, and both flip-flops to the shared CLK. Route Q1 to Output 1, and Q2 to Output 2. Step the clock to observe pipeline propagation.',
+        whatIsHappening: 'Every flip-flop is a 1-clock-cycle delay element. In this 2-stage pipeline, data at D enters Stage 1 on the first clock edge. On the next clock edge, Stage 1 passes its data into Stage 2. Pipelining allows digital processors to divide complex math into single-cycle steps, running at gigahertz clock speeds without timing violations.',
+        task: 'Connect Input D to DFF1 data input, connect DFF1 Q to DFF2 data input, and connect outputs Q1 and Q2. Step the clock in Waveform Viewer to observe data shifting cycle-by-cycle.',
+        solutionPreset: 'shift-reg-2stage',
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
@@ -573,6 +927,53 @@ export const LESSONS = [
                 { fromComponent: 'clock_1', fromPin: 'clock_1.out0', toComponent: 'dff_2', toPin: 'dff_2.in1' }
             ]
         },
+        steps: [
+            {
+                id: 'l8_step1',
+                text: 'Connect Input D to DFF1 data input (pin in0).',
+                hint: 'Drag a wire from Input D (right pin) to DFF1 top-left pin.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    const inD = graph.getInputComponents()[0];
+                    return !!(dffs[0] && inD && dffs[0].inputs[0].connectedTo?.componentId === inD.id);
+                }
+            },
+            {
+                id: 'l8_step2',
+                text: 'Connect DFF1 Q output to DFF2 data input (pin in0).',
+                hint: 'Drag a wire from DFF1 right output pin to DFF2 top-left pin.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    return !!(dffs.length >= 2 && dffs[1].inputs[0].connectedTo?.componentId === dffs[0].id);
+                }
+            },
+            {
+                id: 'l8_step3',
+                text: 'Wire DFF1 Q output to Output Q1.',
+                hint: 'Drag a wire from DFF1 output pin to the input pin of Output Q1.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    const outQ1 = graph.getOutputComponents().find(o => o.label.toUpperCase().includes('Q1')) || graph.getOutputComponents()[0];
+                    return !!(dffs[0] && outQ1 && outQ1.inputs[0].connectedTo?.componentId === dffs[0].id);
+                }
+            },
+            {
+                id: 'l8_step4',
+                text: 'Wire DFF2 Q output to Output Q2.',
+                hint: 'Drag a wire from DFF2 output pin to the input pin of Output Q2.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    const outQ2 = graph.getOutputComponents().find(o => o.label.toUpperCase().includes('Q2')) || graph.getOutputComponents()[1];
+                    return !!(dffs[1] && outQ2 && outQ2.inputs[0].connectedTo?.componentId === dffs[1].id);
+                }
+            },
+            {
+                id: 'l8_step5',
+                text: 'Step Clock Twice: Click "Clock Step" in Waveform Viewer to watch the pulse move into Stage 1.',
+                hint: 'Open Waveform Viewer and click "Clock Step" twice. Observe Q1 transition to 1, while Q2 remains 0 until the next cycle!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffs = graph.getDFFComponents();
             const clocks = graph.getClockComponents();
@@ -658,17 +1059,70 @@ export const LESSONS = [
                 <li><strong>COUT</strong> bit is generated when at least two inputs are 1: <code>COUT = (A & B) | (Cin & (A ^ B))</code>.</li>
             </ul>
         `,
-        task: 'Add XOR, AND, and OR gates to compute SUM and COUT from inputs A, B, and CIN. Connect SUM to output SUM and carry out to output COUT.',
+        whatIsHappening: 'A 1-bit full adder computes binary arithmetic with an incoming carry bit: SUM = A ⊕ B ⊕ Cin (odd parity) and COUT = (A·B) + (Cin·(A⊕B)) (majority logic). If you add 1 + 1 + 1 in binary, the result is 3 (11₂ in binary: SUM=1 and COUT=1). In physical ALUs, full adders are chained together so the carry-out ripples into the carry-in of the next higher bit.',
+        task: 'Place two XOR gates, two AND gates, and one OR gate from the palette. Wire SUM = A ⊕ B ⊕ CIN, and wire COUT = (A·B) + (CIN·(A⊕B)). Test with A=1, B=1, CIN=1 to verify SUM=1, COUT=1.',
+        solutionPreset: 'full-adder',
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 60, y: 70, value: 0 },
                 { id: 'inp_b', type: 'INPUT', label: 'B', x: 60, y: 150, value: 0 },
                 { id: 'inp_cin', type: 'INPUT', label: 'CIN', x: 60, y: 230, value: 0 },
-                { id: 'out_sum', type: 'OUTPUT', label: 'SUM', x: 520, y: 70 },
-                { id: 'out_cout', type: 'OUTPUT', label: 'COUT', x: 520, y: 170 }
+                { id: 'out_sum', type: 'OUTPUT', label: 'SUM', x: 560, y: 70 },
+                { id: 'out_cout', type: 'OUTPUT', label: 'COUT', x: 560, y: 170 }
             ],
             connections: []
         },
+        steps: [
+            {
+                id: 'l9_step1',
+                text: 'Place two XOR gates (XOR1, XOR2) on the canvas from the palette.',
+                hint: 'Drag two XOR gates from the Combinational Logic palette and drop them in the center workspace.',
+                check: (graph) => getComps(graph).filter(c => c.type === 'XOR').length >= 2
+            },
+            {
+                id: 'l9_step2',
+                text: 'Place two AND gates (AND1, AND2) and one OR gate (OR1) from the palette.',
+                hint: 'Drag two AND gates and one OR gate from the palette onto the canvas.',
+                check: (graph) => {
+                    const ands = getComps(graph).filter(c => c.type === 'AND').length;
+                    const ors = getComps(graph).filter(c => c.type === 'OR').length;
+                    return ands >= 2 && ors >= 1;
+                }
+            },
+            {
+                id: 'l9_step3',
+                text: 'Wire inputs A and B to the first XOR gate and first AND gate.',
+                hint: 'Connect Input A to XOR1 and AND1. Connect Input B to the second pin of XOR1 and AND1.',
+                check: (graph) => {
+                    const xors = getComps(graph).filter(c => c.type === 'XOR');
+                    const ands = getComps(graph).filter(c => c.type === 'AND');
+                    const inA = graph.getInputComponents().find(i => i.label.toUpperCase() === 'A');
+                    const inB = graph.getInputComponents().find(i => i.label.toUpperCase() === 'B');
+                    if (!inA || !inB || xors.length === 0 || ands.length === 0) return false;
+                    const xor0HasInputs = (xors[0].inputs[0].connectedTo?.componentId === inA.id || xors[0].inputs[1].connectedTo?.componentId === inA.id);
+                    const and0HasInputs = (ands[0].inputs[0].connectedTo?.componentId === inA.id || ands[0].inputs[1].connectedTo?.componentId === inA.id);
+                    return xor0HasInputs && and0HasInputs;
+                }
+            },
+            {
+                id: 'l9_step4',
+                text: 'Wire XOR1 output and CIN to XOR2, and route XOR2 output to SUM.',
+                hint: 'Drag XOR1 output to XOR2 pin 0, CIN to XOR2 pin 1, and XOR2 output to Output SUM.',
+                check: (graph) => {
+                    const outSum = graph.getOutputComponents().find(o => o.label.toUpperCase().includes('SUM')) || graph.getOutputComponents()[0];
+                    return !!(outSum && outSum.inputs[0].connectedTo);
+                }
+            },
+            {
+                id: 'l9_step5',
+                text: 'Wire carry generation into the OR gate, and connect to Output COUT.',
+                hint: 'Wire AND1 and AND2 outputs into the OR gate, then connect the OR gate output to COUT.',
+                check: (graph) => {
+                    const outCout = graph.getOutputComponents().find(o => o.label.toUpperCase().includes('COUT') || o.label.toUpperCase().includes('CARRY')) || graph.getOutputComponents()[1];
+                    return !!(outCout && outCout.inputs[0].connectedTo);
+                }
+            }
+        ],
         validate: (graph, simulator) => {
             const inputs = graph.getInputComponents();
             const outputs = graph.getOutputComponents();
@@ -738,7 +1192,9 @@ export const LESSONS = [
             When <code>EN=1</code>, the rising clock edge loads data <code>D</code> into <code>Q</code>.
             When <code>EN=0</code>, the register retains its previous state, ignoring changes on input D.
         `,
-        task: 'Connect data input D and enable input EN to the DFFE component. Step the clock to observe that D is captured when EN=1, and safely preserved when EN=0.',
+        whatIsHappening: 'The DFFE is an ASIC standard library cell containing a D Flip-Flop with integrated Clock Enable. When EN=1, the cell samples input D on the rising clock edge (0→1). When EN=0, clock pulses are safely ignored and previous state Q is preserved. In Verilog RTL, this maps directly to always @(posedge clk) begin if (en) q <= d; end.',
+        task: 'Connect Input D to the data pin (in0) of the DFFE, and connect Input EN to the enable pin (in2). Pulse the clock in the Waveform Viewer to confirm that D is captured when EN=1 and retained when EN=0.',
+        solutionPreset: 'dff-enable',
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -752,6 +1208,40 @@ export const LESSONS = [
                 { fromComponent: 'dffe_1', fromPin: 'dffe_1.out0', toComponent: 'out_q', toPin: 'out_q.in0' }
             ]
         },
+        steps: [
+            {
+                id: 'l10_step1',
+                text: 'Wire Input D to the top data input (pin in0) of the DFFE.',
+                hint: 'Drag a wire from Input D (right pin) to the top-left pin of the DFFE component.',
+                check: (graph) => {
+                    const dffe = getComps(graph).find(c => c.type === 'DFFE');
+                    const inD = graph.getInputComponents().find(i => i.label.toUpperCase() === 'D');
+                    return !!(dffe && inD && dffe.inputs[0].connectedTo?.componentId === inD.id);
+                }
+            },
+            {
+                id: 'l10_step2',
+                text: 'Wire Input EN to the bottom enable input (pin in2) of the DFFE.',
+                hint: 'Drag a wire from Input EN (right pin) to the bottom-left pin of the DFFE component.',
+                check: (graph) => {
+                    const dffe = getComps(graph).find(c => c.type === 'DFFE');
+                    const inEn = graph.getInputComponents().find(i => i.label.toUpperCase() === 'EN');
+                    return !!(dffe && inEn && dffe.inputs[2].connectedTo?.componentId === inEn.id);
+                }
+            },
+            {
+                id: 'l10_step3',
+                text: 'Verify Hold: Step clock in Waveform Viewer with EN=0 (Q holds 0).',
+                hint: 'Open the Waveform Viewer tab and click "Clock Step" twice. With EN=0, D=1 is safely ignored!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            },
+            {
+                id: 'l10_step4',
+                text: 'Verify Load: Toggle EN=1 and step clock to load D=1 into Q.',
+                hint: 'Set EN=1 on the canvas, then click "Clock Step" twice in Waveform Viewer. Output Q updates to 1!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 4 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffes = Array.from(graph.components.values()).filter(c => c.type === 'DFFE');
             const clocks = graph.getClockComponents();
@@ -835,7 +1325,9 @@ export const LESSONS = [
 end</code></pre>
             This ensures critical system reset conditions are never blocked by an inactive enable line.
         `,
-        task: 'Connect D, EN, and RST to the DFFESR register. Verify that when RST=1, the register is cleared to 0 regardless of whether EN is 1 or 0.',
+        whatIsHappening: 'When both Reset (RST) and Clock Enable (EN) arrive simultaneously at a register, Reset MUST take priority! If Enable took precedence, a frozen or disabled subsystem could never be reset during a system fault. In RTL, if (rst) q <= 0; else if (en) q <= d; codifies this strict priority structure.',
+        task: 'Wire Input D, EN, and RST into the DFFESR component. Step the clock in Waveform Viewer with both RST=1 and EN=1 to confirm that Reset dominates and clears Q to 0.',
+        solutionPreset: 'dff-esr-priority',
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 60, value: 1 },
@@ -850,6 +1342,44 @@ end</code></pre>
                 { fromComponent: 'dffesr_1', fromPin: 'dffesr_1.out0', toComponent: 'out_q', toPin: 'out_q.in0' }
             ]
         },
+        steps: [
+            {
+                id: 'l11_step1',
+                text: 'Wire Input D to DFFESR data pin in0.',
+                hint: 'Drag a wire from Input D (right pin) to the top-left pin (in0) of DFFESR.',
+                check: (graph) => {
+                    const reg = getComps(graph).find(c => c.type === 'DFFESR');
+                    const inD = graph.getInputComponents().find(i => i.label.toUpperCase() === 'D');
+                    return !!(reg && inD && reg.inputs[0].connectedTo?.componentId === inD.id);
+                }
+            },
+            {
+                id: 'l11_step2',
+                text: 'Wire Input EN to DFFESR enable pin in2.',
+                hint: 'Drag a wire from Input EN (right pin) to pin in2 of DFFESR.',
+                check: (graph) => {
+                    const reg = getComps(graph).find(c => c.type === 'DFFESR');
+                    const inEn = graph.getInputComponents().find(i => i.label.toUpperCase() === 'EN');
+                    return !!(reg && inEn && reg.inputs[2].connectedTo?.componentId === inEn.id);
+                }
+            },
+            {
+                id: 'l11_step3',
+                text: 'Wire Input RST to DFFESR synchronous reset pin in3.',
+                hint: 'Drag a wire from Input RST (right pin) to pin in3 of DFFESR.',
+                check: (graph) => {
+                    const reg = getComps(graph).find(c => c.type === 'DFFESR');
+                    const inRst = graph.getInputComponents().find(i => i.label.toUpperCase() === 'RST');
+                    return !!(reg && inRst && reg.inputs[3].connectedTo?.componentId === inRst.id);
+                }
+            },
+            {
+                id: 'l11_step4',
+                text: 'Verify Reset Dominance: Step clock with both RST=1 and EN=1 to see Q clear to 0.',
+                hint: 'In Waveform Viewer, click "Clock Step" twice. With RST=1 and EN=1 active together, Q clears to 0!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffesrs = Array.from(graph.components.values()).filter(c => c.type === 'DFFESR');
             const clocks = graph.getClockComponents();
@@ -928,7 +1458,9 @@ end</code></pre>
             </ol>
             If blocking assignments (<code>=</code>) were used, the first register would update immediately, and the second register would erroneously capture the new value in the <em>same</em> clock edge (race shoot-through).
         `,
-        task: 'Connect input D to STAGE1, route STAGE1 Q to STAGE2 D, and wire both to the shared CLK. Verify that a pulse on D takes exactly 2 clock cycles to emerge at Q2.',
+        whatIsHappening: 'Physical registers sample their inputs concurrently at the active clock edge. Verilog nonblocking assignments (<=) mirror this: every register evaluates its input based on state BEFORE the clock edge, and only commits updates AFTER the edge completes. If blocking assignments (=) were used, Stage 1 would immediately update and Stage 2 would mistakenly capture the new value in the very same clock edge — a dangerous software simulation race condition!',
+        task: 'Wire Input D to STAGE1, connect STAGE1 Q to STAGE2 D, and wire both outputs Q1 and Q2. Step the clock over multiple cycles to confirm that a data pulse takes exactly 2 cycles to traverse the pipeline without shoot-through.',
+        solutionPreset: 'blocking-vs-nonblocking',
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
@@ -943,6 +1475,51 @@ end</code></pre>
                 { fromComponent: 'clk_1', fromPin: 'clk_1.out0', toComponent: 'dff_2', toPin: 'dff_2.in1' }
             ]
         },
+        steps: [
+            {
+                id: 'l12_step1',
+                text: 'Wire Input D to STAGE1 data input pin in0.',
+                hint: 'Drag a wire from Input D (right pin) to STAGE1 top-left pin.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    const inD = graph.getInputComponents()[0];
+                    return !!(dffs[0] && inD && dffs[0].inputs[0].connectedTo?.componentId === inD.id);
+                }
+            },
+            {
+                id: 'l12_step2',
+                text: 'Wire STAGE1 Q output to STAGE2 data input pin in0.',
+                hint: 'Drag a wire from STAGE1 right output pin to STAGE2 top-left pin.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    return !!(dffs.length >= 2 && dffs[1].inputs[0].connectedTo?.componentId === dffs[0].id);
+                }
+            },
+            {
+                id: 'l12_step3',
+                text: 'Wire STAGE1 Q to Output Q1, and STAGE2 Q to Output Q2.',
+                hint: 'Connect STAGE1 output pin to Output Q1, and STAGE2 output pin to Output Q2.',
+                check: (graph) => {
+                    const dffs = graph.getDFFComponents();
+                    const outputs = graph.getOutputComponents();
+                    const q1 = outputs.find(o => o.label.toUpperCase().includes('Q1')) || outputs[0];
+                    const q2 = outputs.find(o => o.label.toUpperCase().includes('Q2')) || outputs[1];
+                    return !!(dffs.length >= 2 && q1 && q2 && q1.inputs[0].connectedTo?.componentId === dffs[0].id && q2.inputs[0].connectedTo?.componentId === dffs[1].id);
+                }
+            },
+            {
+                id: 'l12_step4',
+                text: 'Step Clock for Cycle 1: Verify Q1=1 and Q2=0 (no race shoot-through).',
+                hint: 'Open Waveform Viewer and click "Clock Step" twice. Notice Q1 captures 1, but Q2 remains 0!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 2 : false)
+            },
+            {
+                id: 'l12_step5',
+                text: 'Toggle D=0 and Step Clock for Cycle 2: Observe Q1=0 and Q2=1.',
+                hint: 'Set D=0 on canvas, then click "Clock Step" twice in Waveform Viewer. The 1 has shifted to STAGE2!',
+                check: (graph, sim, seq) => (seq ? seq.getWaveformHistory().length >= 4 : false)
+            }
+        ],
         validate: (graph, simulator, sequentialEngine) => {
             const dffs = graph.getDFFComponents();
             const clocks = graph.getClockComponents();
@@ -1015,6 +1592,35 @@ export class LessonManager {
         this.seq = sequentialEngine;
 
         this.currentLesson = null;
+        this._graphChangeListener = null;
+        this.renderList();
+    }
+
+    getCompletedLessonIds() {
+        try {
+            const raw = localStorage.getItem('rtl_lessons_completed');
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    markLessonCompleted(id) {
+        try {
+            const list = this.getCompletedLessonIds();
+            if (!list.includes(id)) {
+                list.push(id);
+                localStorage.setItem('rtl_lessons_completed', JSON.stringify(list));
+            }
+        } catch {
+            // Storage access graceful fallback
+        }
+    }
+
+    resetProgress() {
+        try {
+            localStorage.removeItem('rtl_lessons_completed');
+        } catch {}
         this.renderList();
     }
 
@@ -1025,16 +1631,46 @@ export class LessonManager {
     renderList() {
         if (!this.container) return;
 
+        // Detach any existing graph listener when returning to list
+        if (this._graphChangeListener) {
+            this.graph.off('change', this._graphChangeListener);
+            this._graphChangeListener = null;
+        }
+
+        const completedIds = this.getCompletedLessonIds();
+        const completedCount = completedIds.length;
+        const totalCount = LESSONS.length;
+        const percent = Math.round((completedCount / totalCount) * 100);
+
         let html = `
             <div class="lessons-list">
-                <div class="inspector-card-title">Guided RTL Lessons</div>
+                <div class="inspector-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Guided RTL Lessons</span>
+                    <span style="font-size:10px; font-weight:normal; color:var(--text-muted);">${completedCount}/${totalCount} Done</span>
+                </div>
+
+                <div class="lesson-progress-box" style="margin-bottom:12px; padding:8px 10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+                        <span style="color:var(--text-main); font-weight:600;">Fundamentals Progress</span>
+                        <span style="color:var(--accent-primary); font-weight:600;">${percent}%</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; overflow:hidden;">
+                        <div style="background:var(--accent-primary); width:${percent}%; height:100%; transition:width 0.3s ease;"></div>
+                    </div>
+                    ${completedCount > 0 ? `
+                        <div style="text-align:right; margin-top:4px;">
+                            <button id="btn-reset-fundamentals-progress" class="btn btn-sm btn-ghost" style="font-size:10px; padding:2px 4px; color:var(--text-muted);">Reset Progress</button>
+                        </div>
+                    ` : ''}
+                </div>
         `;
 
-        LESSONS.forEach(lesson => {
+        LESSONS.forEach((lesson, idx) => {
+            const isCompleted = completedIds.includes(lesson.id);
             html += `
-                <div class="lesson-card ${this.currentLesson?.id === lesson.id ? 'active' : ''}" data-lesson-id="${lesson.id}">
+                <div class="lesson-card ${this.currentLesson?.id === lesson.id ? 'active' : ''} ${isCompleted ? 'completed-lesson' : ''}" data-lesson-id="${lesson.id}">
                     <div class="lesson-header">
-                        <span class="lesson-title">${lesson.title}</span>
+                        <span class="lesson-title">${isCompleted ? '✓ ' : ''}${lesson.title}</span>
                         <span class="lesson-badge ${lesson.difficulty}">${lesson.difficulty}</span>
                     </div>
                     <div class="lesson-desc">${lesson.description}</div>
@@ -1043,38 +1679,49 @@ export class LessonManager {
         });
 
         html += `
-            <div class="inspector-card-title" style="margin-top: 16px;">Advanced RTL Systems (Lessons 13–22)</div>
-            <div class="advanced-curriculum-nav" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
-                <a href="advanced-lab/index.html?tab=datapath" class="lesson-card" style="text-decoration:none; display:block;">
-                    <div class="lesson-header">
-                        <span class="lesson-title">13–16: Vectors, Adders & ALU Datapaths</span>
-                        <span class="lesson-badge advanced">ADV</span>
-                    </div>
-                    <div class="lesson-desc">Multi-bit buses, carry-lookahead vs ripple adder, ALU flags (Z, C, V, N)</div>
-                </a>
-                <a href="advanced-lab/index.html?tab=sequential" class="lesson-card" style="text-decoration:none; display:block;">
-                    <div class="lesson-header">
-                        <span class="lesson-title">17–20: Registers, Counters & Shift Registers</span>
-                        <span class="lesson-badge advanced">ADV</span>
-                    </div>
-                    <div class="lesson-desc">Recirculating multi-bit registers, modulo binary counters, universal shift registers</div>
-                </a>
-                <a href="advanced-lab/index.html?tab=fsm" class="lesson-card" style="text-decoration:none; display:block;">
-                    <div class="lesson-header">
-                        <span class="lesson-title">21–22: Moore & Mealy State Machines</span>
-                        <span class="lesson-badge advanced">ADV</span>
-                    </div>
-                    <div class="lesson-desc">Interactive FSM state diagrams, sequence detectors, zero-latency Mealy vs Moore outputs</div>
-                </a>
-                <a href="advanced-lab/index.html?tab=lessons" class="btn btn-primary btn-sm" style="text-align:center; text-decoration:none; margin-top:4px; display:block;">
-                    🚀 Open Advanced Lab Curriculum (10 Lessons) →
-                </a>
-            </div>
-        </div>`;
+                <div class="inspector-card-title" style="margin-top: 16px;">Advanced RTL Systems (Lessons 13–24)</div>
+                <div class="advanced-curriculum-nav" style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                    <a href="advanced-lab/index.html?tab=datapath" class="lesson-card" style="text-decoration:none; display:block;">
+                        <div class="lesson-header">
+                            <span class="lesson-title">13–16: Vectors, Adders & ALU Datapaths</span>
+                            <span class="lesson-badge advanced">ADV</span>
+                        </div>
+                        <div class="lesson-desc">Multi-bit buses, carry-lookahead vs ripple adder, ALU flags (Z, C, V, N)</div>
+                    </a>
+                    <a href="advanced-lab/index.html?tab=sequential" class="lesson-card" style="text-decoration:none; display:block;">
+                        <div class="lesson-header">
+                            <span class="lesson-title">17–20: Registers, Counters & Shift Registers</span>
+                            <span class="lesson-badge advanced">ADV</span>
+                        </div>
+                        <div class="lesson-desc">Recirculating multi-bit registers, modulo binary counters, universal shift registers</div>
+                    </a>
+                    <a href="advanced-lab/index.html?tab=fsm" class="lesson-card" style="text-decoration:none; display:block;">
+                        <div class="lesson-header">
+                            <span class="lesson-title">21–24: Moore & Mealy State Machines</span>
+                            <span class="lesson-badge advanced">ADV</span>
+                        </div>
+                        <div class="lesson-desc">Interactive FSM state diagrams, sequence detectors, zero-latency Mealy vs Moore outputs</div>
+                    </a>
+                    <a href="advanced-lab/index.html?tab=lessons" class="btn btn-primary btn-sm" style="text-align:center; text-decoration:none; margin-top:4px; display:block;">
+                        🚀 Open Advanced Lab Curriculum (12 Lessons) →
+                    </a>
+                </div>
+            </div>`;
         this.container.innerHTML = html;
 
+        // Bind reset progress
+        const resetProgressBtn = this.container.querySelector('#btn-reset-fundamentals-progress');
+        if (resetProgressBtn) {
+            resetProgressBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Reset your RTL Fundamentals lesson progress?')) {
+                    this.resetProgress();
+                }
+            });
+        }
+
         // Bind clicks
-        const cards = this.container.querySelectorAll('.lesson-card');
+        const cards = this.container.querySelectorAll('.lesson-card[data-lesson-id]');
         cards.forEach(card => {
             card.addEventListener('click', () => {
                 const id = card.getAttribute('data-lesson-id');
@@ -1088,6 +1735,20 @@ export class LessonManager {
         this.currentLesson = lesson;
         if (!this.container) return;
 
+        // Clean previous listener
+        if (this._graphChangeListener) {
+            this.graph.off('change', this._graphChangeListener);
+        }
+
+        const whatIsHappeningHtml = lesson.whatIsHappening ? `
+            <div class="lesson-silicon-explainer" style="margin: 8px 0; padding: 8px 10px; background: rgba(56, 189, 248, 0.08); border-left: 3px solid var(--accent-primary); border-radius: 4px; font-size: 11.5px; line-height: 1.45; color: #bae6fd;">
+                <div style="font-weight: 600; color: var(--accent-primary); margin-bottom: 3px; display:flex; align-items:center; gap:4px;">
+                    <span>⚡ What's Happening in Silicon:</span>
+                </div>
+                <div>${lesson.whatIsHappening}</div>
+            </div>
+        ` : '';
+
         this.container.innerHTML = `
             <div class="lesson-workspace-view">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1095,19 +1756,30 @@ export class LessonManager {
                     <span class="lesson-badge ${lesson.difficulty}">${lesson.difficulty}</span>
                 </div>
 
-                <h4 style="color:var(--accent-primary); font-size:13px; margin-top:4px;">${lesson.title}</h4>
+                <h4 style="color:var(--accent-primary); font-size:13px; margin-top:6px; margin-bottom:2px;">${lesson.title}</h4>
 
-                <div class="lesson-instructions">${lesson.explanation}</div>
+                <div class="lesson-instructions" style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">${lesson.explanation}</div>
 
-                <div class="lesson-task-box">
-                    <strong>Task:</strong> ${lesson.task}
+                ${whatIsHappeningHtml}
+
+                <div class="lesson-task-box" style="margin: 6px 0; padding: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: 4px; font-size: 11.5px;">
+                    <strong style="color:var(--text-main);">Goal:</strong> ${lesson.task}
                 </div>
 
-                <div id="lesson-feedback" style="display:none;"></div>
+                <!-- Live Step Checklist -->
+                <div class="lesson-steps-container" style="margin: 8px 0; padding: 8px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 5px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                        <span style="font-size:11px; font-weight:600; color:var(--text-main);">Interactive Steps (<span id="steps-completed-count">0</span>/${lesson.steps ? lesson.steps.length : 0})</span>
+                        ${lesson.solutionPreset ? `<button id="btn-load-solution" class="btn btn-sm btn-ghost" style="font-size:10px; color:var(--accent-primary);" title="Load reference solution circuit">👀 Load Solution</button>` : ''}
+                    </div>
+                    <div id="lesson-steps-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+                </div>
 
-                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+                <div id="lesson-feedback" style="display:none; margin: 8px 0;"></div>
+
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
                     <button id="btn-check-solution" class="btn btn-success btn-sm" style="flex:1;">
-                        ✓ Check Solution
+                        ✓ Verify & Check Solution
                     </button>
                     <button id="btn-reset-lesson" class="btn btn-sm">
                         ↺ Reset Circuit
@@ -1123,7 +1795,12 @@ export class LessonManager {
             this.editor.render();
         }
 
-        // Bind buttons
+        // Live checklist updates on graph modifications
+        this._graphChangeListener = () => this.updateStepChecklist();
+        this.graph.on('change', this._graphChangeListener);
+        this.updateStepChecklist();
+
+        // Bind back button
         const backBtn = document.getElementById('btn-back-lessons');
         if (backBtn) {
             backBtn.addEventListener('click', () => {
@@ -1132,6 +1809,7 @@ export class LessonManager {
             });
         }
 
+        // Bind reset button
         const resetBtn = document.getElementById('btn-reset-lesson');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -1144,15 +1822,104 @@ export class LessonManager {
                 this.editor.render();
                 const fb = document.getElementById('lesson-feedback');
                 if (fb) fb.style.display = 'none';
+                this.updateStepChecklist();
             });
         }
 
+        // Bind load solution button
+        const loadSolBtn = document.getElementById('btn-load-solution');
+        if (loadSolBtn && lesson.solutionPreset && PRESETS[lesson.solutionPreset]) {
+            loadSolBtn.addEventListener('click', () => {
+                if (confirm('Load the verified reference circuit for this lesson? You can inspect and test it immediately.')) {
+                    this.graph.deserialize(PRESETS[lesson.solutionPreset].circuit);
+                    this.simulator.evaluate();
+                    this.editor.render();
+                    this.updateStepChecklist();
+                }
+            });
+        }
+
+        // Bind check solution button
         const checkBtn = document.getElementById('btn-check-solution');
         if (checkBtn) {
             checkBtn.addEventListener('click', () => {
                 this.checkCurrentSolution();
             });
         }
+    }
+
+    updateStepChecklist() {
+        if (!this.currentLesson || !this.currentLesson.steps) return;
+
+        const listContainer = document.getElementById('lesson-steps-list');
+        const countSpan = document.getElementById('steps-completed-count');
+        if (!listContainer) return;
+
+        let completedCount = 0;
+        let foundFirstIncomplete = false;
+
+        const html = this.currentLesson.steps.map((step, idx) => {
+            let isPassed = false;
+            try {
+                isPassed = !!step.check(this.graph, this.simulator, this.seq);
+            } catch {
+                isPassed = false;
+            }
+
+            if (isPassed) completedCount++;
+
+            let badgeHtml = '';
+            let stepClass = '';
+
+            if (isPassed) {
+                badgeHtml = `<span style="display:inline-block; padding:1px 5px; font-size:9.5px; border-radius:3px; background:rgba(34,197,94,0.2); color:#4ade80; font-weight:600; white-space:nowrap;">✓ Done</span>`;
+                stepClass = 'step-done';
+            } else if (!foundFirstIncomplete) {
+                foundFirstIncomplete = true;
+                badgeHtml = `<span style="display:inline-block; padding:1px 5px; font-size:9.5px; border-radius:3px; background:rgba(56,189,248,0.25); color:#38bdf8; font-weight:600; white-space:nowrap;">➔ Next Step</span>`;
+                stepClass = 'step-active';
+            } else {
+                badgeHtml = `<span style="display:inline-block; padding:1px 5px; font-size:9.5px; border-radius:3px; background:rgba(255,255,255,0.06); color:var(--text-muted); font-weight:600; white-space:nowrap;">○ Step ${idx + 1}</span>`;
+                stepClass = 'step-pending';
+            }
+
+            return `
+                <div class="lesson-step-item ${stepClass}" style="padding:6px; background:rgba(255,255,255,0.02); border-radius:4px; border:1px solid ${stepClass === 'step-active' ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.05)'};">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                        <div style="font-size:11px; line-height:1.35; color:${isPassed ? 'var(--text-muted)' : 'var(--text-main)'}; text-decoration:${isPassed ? 'line-through' : 'none'};">
+                            ${step.text}
+                        </div>
+                        <div>${badgeHtml}</div>
+                    </div>
+                    ${step.hint ? `
+                        <div style="margin-top:4px;">
+                            <button class="btn-step-hint" data-step-id="${step.id}" style="background:none; border:none; color:var(--accent-primary); font-size:10px; cursor:pointer; padding:0; text-decoration:underline;">
+                                💡 Show Hint
+                            </button>
+                            <div id="hint-box-${step.id}" style="display:none; margin-top:3px; padding:4px 6px; background:rgba(245,158,11,0.1); border-left:2px solid #f59e0b; border-radius:3px; font-size:10.5px; color:#fde68a;">
+                                ${step.hint}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        listContainer.innerHTML = html;
+        if (countSpan) countSpan.textContent = completedCount;
+
+        // Bind hint toggle buttons
+        listContainer.querySelectorAll('.btn-step-hint').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stepId = btn.getAttribute('data-step-id');
+                const box = document.getElementById(`hint-box-${stepId}`);
+                if (box) {
+                    const isOpen = box.style.display !== 'none';
+                    box.style.display = isOpen ? 'none' : 'block';
+                    btn.textContent = isOpen ? '💡 Show Hint' : 'Hide Hint';
+                }
+            });
+        });
     }
 
     checkCurrentSolution() {
@@ -1166,11 +1933,37 @@ export class LessonManager {
         fb.style.display = 'block';
         fb.className = `lesson-feedback-box ${result.pass ? 'feedback-success' : 'feedback-error'}`;
 
-        let extraGuide = '';
         if (result.pass) {
+            this.markLessonCompleted(this.currentLesson.id);
+            this.updateStepChecklist();
+
+            // Find next lesson
+            const currentIdx = LESSONS.findIndex(l => l.id === this.currentLesson.id);
+            const nextLesson = (currentIdx >= 0 && currentIdx < LESSONS.length - 1) ? LESSONS[currentIdx + 1] : null;
+
+            let nextNavHtml = '';
+            if (nextLesson) {
+                nextNavHtml = `
+                    <div style="margin-top: 10px;">
+                        <button id="btn-next-lesson" class="btn btn-primary btn-sm" style="width:100%;">
+                            Next Lesson: ${nextLesson.title} →
+                        </button>
+                    </div>
+                `;
+            } else {
+                nextNavHtml = `
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 4px;">
+                        <div style="font-weight: 600; color: #4ade80; font-size: 11px;">🎓 FUNDAMENTALS CURRICULUM COMPLETE!</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">You've mastered all 12 single-bit digital logic & RTL lessons! Advance to multi-bit datapaths, ALUs, counters, and FSMs:</div>
+                        <a href="advanced-lab/index.html?tab=datapath" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">🚀 Launch Advanced RTL Lab →</a>
+                    </div>
+                `;
+            }
+
+            let extraGuide = '';
             if (this.currentLesson.id === 'lesson-2-half-adder' || this.currentLesson.id === 'lesson-9-full-adder') {
                 extraGuide = `
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                    <div style="margin-top: 8px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
                         <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
                         <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">You've mastered 1-bit binary addition! Next, explore how 4-bit ripple-carry adders and full ALUs are built using multi-bit buses.</div>
                         <a href="advanced-lab/index.html?tab=datapath" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open 4-Bit Adder & ALU Lab →</a>
@@ -1178,7 +1971,7 @@ export class LessonManager {
                 `;
             } else if (this.currentLesson.id === 'lesson-6-reg-enable' || this.currentLesson.id === 'lesson-10-reg-enable' || this.currentLesson.id === 'lesson-7-sync-reset' || this.currentLesson.id === 'lesson-11-sync-reset-priority') {
                 extraGuide = `
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                    <div style="margin-top: 8px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
                         <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
                         <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">Take registers further with multi-bit vector registers, binary modulo counters, and universal shift registers.</div>
                         <a href="advanced-lab/index.html?tab=sequential" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open Multi-Bit Sequential Lab →</a>
@@ -1186,15 +1979,25 @@ export class LessonManager {
                 `;
             } else if (this.currentLesson.id === 'lesson-3-mux' || this.currentLesson.id === 'lesson-5-mux-cond') {
                 extraGuide = `
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
+                    <div style="margin-top: 8px; padding: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px;">
                         <div style="font-weight: 600; color: var(--accent-primary); font-size: 11px;">🚀 LEVEL UP IN ADVANCED RTL LAB:</div>
                         <div style="font-size: 11px; color: var(--text-muted); margin: 4px 0 6px 0;">Explore how multi-bit multiplexers route data words inside arithmetic datapaths and ALUs.</div>
                         <a href="advanced-lab/index.html?tab=datapath" class="btn btn-primary btn-sm" style="display:inline-block; text-decoration:none;">Open Datapath Visualizer →</a>
                     </div>
                 `;
             }
-        }
 
-        fb.innerHTML = result.message + extraGuide;
+            fb.innerHTML = `<div>${result.message}</div>${nextNavHtml}${extraGuide}`;
+
+            // Bind next lesson button
+            const nextBtn = document.getElementById('btn-next-lesson');
+            if (nextBtn && nextLesson) {
+                nextBtn.addEventListener('click', () => {
+                    this.openLesson(nextLesson);
+                });
+            }
+        } else {
+            fb.innerHTML = result.message;
+        }
     }
 }
