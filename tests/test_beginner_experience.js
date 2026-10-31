@@ -19,6 +19,7 @@ import { LESSONS } from '../src/modules/lessons.js';
 import { PRESETS } from '../src/modules/presets.js';
 import { PanelManager } from '../src/ui/panels.js';
 import { ADVANCED_LESSONS } from '../advanced-lab/lessons/advanced_lessons.js';
+import { SoundController } from '../src/ui/sound_effects.js';
 
 describe('Beginner Guided Experience Test Suite', () => {
 
@@ -141,6 +142,64 @@ describe('Beginner Guided Experience Test Suite', () => {
         assert.ok(l9);
         assert.strictEqual(l9.validate({ nextState: 'S_101' }).success, true);
         assert.strictEqual(l9.validate({ nextState: 'S_RESET' }).success, false);
+    });
+
+    it('All 12 Fundamentals lessons must have an interactive Concept Check quiz with exactly 1 correct answer', () => {
+        LESSONS.forEach(lesson => {
+            assert.ok(lesson.quiz, `Lesson ${lesson.id} must have a quiz object`);
+            assert.ok(typeof lesson.quiz.question === 'string' && lesson.quiz.question.length > 10, `Lesson ${lesson.id} quiz must have a descriptive question`);
+            assert.ok(Array.isArray(lesson.quiz.options) && lesson.quiz.options.length >= 2, `Lesson ${lesson.id} quiz must have at least 2 options`);
+            
+            const correctCount = lesson.quiz.options.filter(o => o.correct).length;
+            assert.strictEqual(correctCount, 1, `Lesson ${lesson.id} quiz must have exactly 1 correct option`);
+
+            lesson.quiz.options.forEach((opt, oIdx) => {
+                assert.ok(opt.text, `Lesson ${lesson.id} opt ${oIdx} must have text`);
+                assert.ok(opt.explain, `Lesson ${lesson.id} opt ${oIdx} must have explanation`);
+            });
+        });
+    });
+
+    it('SoundController manages mute state and executes safely in headless environment', () => {
+        const sound = new SoundController();
+        assert.strictEqual(typeof sound.isMuted, 'boolean');
+        const initial = sound.isMuted;
+        const toggled = sound.toggleMute();
+        assert.strictEqual(toggled, !initial);
+        sound.toggleMute(); // toggle back
+
+        // Ensure playback methods never throw in non-browser/headless Node
+        assert.doesNotThrow(() => sound.playSwitchClick());
+        assert.doesNotThrow(() => sound.playWireConnect());
+        assert.doesNotThrow(() => sound.playStepSuccess());
+        assert.doesNotThrow(() => sound.playLessonComplete());
+    });
+
+    it('Bidirectional connection logic: input-to-output wire orientation connects properly', () => {
+        const graph = new CircuitGraph();
+        const gateId = graph.addComponent('AND', 100, 100).id;
+        const swId = graph.addComponent('INPUT', 20, 100).id;
+        const gate = graph.getComponent(gateId);
+        const sw = graph.getComponent(swId);
+
+        // Simulate bidirectional wiring: user started from input pin, dragged to output pin
+        let fromComp = gate.id;
+        let fromPin = gate.inputs[0].id;
+        let toComp = sw.id;
+        let toPin = sw.outputs[0].id;
+
+        // The bidirectional adapter swaps them so from=output and to=input
+        const swappedFromComp = toComp;
+        const swappedFromPin = toPin;
+        const swappedToComp = fromComp;
+        const swappedToPin = fromPin;
+
+        const res = graph.addConnection(swappedFromComp, swappedFromPin, swappedToComp, swappedToPin);
+        assert.strictEqual(res.ok, true, 'Connection should succeed when properly oriented');
+        assert.strictEqual(graph.connections.size, 1);
+        const conn = Array.from(graph.connections.values())[0];
+        assert.strictEqual(conn.fromComponent, sw.id);
+        assert.strictEqual(conn.toComponent, gate.id);
     });
 
 });

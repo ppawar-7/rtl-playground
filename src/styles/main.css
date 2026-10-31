@@ -602,7 +602,14 @@ html, body {
 
 .circuit-wire.wire-high {
   stroke: var(--signal-high);
-  filter: drop-shadow(0 0 3px var(--signal-high-glow));
+  filter: drop-shadow(0 0 4px var(--signal-high-glow));
+  stroke-dasharray: 8 4;
+  animation: wireSignalFlow 0.8s linear infinite;
+}
+
+@keyframes wireSignalFlow {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
 }
 
 .circuit-wire.wire-low {
@@ -1393,3 +1400,249 @@ html, body {
 .lesson-step-item.step-active {
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
+
+/* --- Beginner Experience & Guided Tutor Styles --- */
+.circuit-pin.pin-target-candidate {
+  r: 7px;
+  stroke: #38bdf8 !important;
+  stroke-width: 2.5px !important;
+  animation: pinPulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes pinPulse {
+  from {
+    r: 6px;
+    filter: drop-shadow(0 0 2px #38bdf8);
+  }
+  to {
+    r: 8px;
+    filter: drop-shadow(0 0 8px #38bdf8);
+  }
+}
+
+.palette-item.palette-guide-highlight {
+  border-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.18) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+  animation: paletteItemGlow 1s ease-in-out infinite alternate;
+  position: relative;
+}
+
+@keyframes paletteItemGlow {
+  0% { box-shadow: 0 0 4px rgba(56, 189, 248, 0.3); }
+  100% { box-shadow: 0 0 14px rgba(56, 189, 248, 0.7); }
+}
+
+.canvas-tutor-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  max-width: 90%;
+  pointer-events: auto;
+  transition: all 0.25s ease;
+}
+
+.canvas-tutor-banner.tutor-success {
+  border-color: #22c55e;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(34, 197, 94, 0.3);
+}
+
+.tutor-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tutor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tutor-step-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tutor-step-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  max-width: 480px;
+}
+
+.tutor-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+.lesson-quiz-box {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.quiz-question {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quiz-opt-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  padding: 5px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.quiz-opt-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.quiz-opt-btn.correct {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #4ade80 !important;
+}
+
+.quiz-opt-btn.incorrect {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #f87171 !important;
+}
+
+.quiz-feedback {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.quiz-feedback.correct {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.quiz-feedback.incorrect {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.handbook-modal-card {
+  width: 900px;
+  max-width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.handbook-nav-tabs {
+  display: flex;
+  background-color: #0b1120;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  gap: 4px;
+}
+
+.handbook-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.handbook-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.handbook-tab-btn.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.handbook-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.handbook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.handbook-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.handbook-card:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.02);
+}
+
+.handbook-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+

@@ -76,13 +76,13 @@ async function runLiveAudit() {
     // Check tab switching on live site to FSM tab
     await send('Runtime.evaluate', { expression: "document.querySelector(\"[data-tab='fsm']\").click()" });
     await sleep(800);
-    const fsmSvg = (await send('Runtime.evaluate', { expression: "!!document.querySelector('#fsm-canvas svg')" })).result.value;
+    const fsmSvg = (await send('Runtime.evaluate', { expression: "!!document.querySelector('#fsm-mount svg')" })).result.value;
     console.log('  ✓ Live FSM Studio SVG rendered:', fsmSvg);
 
     // Check Curriculum tab
     await send('Runtime.evaluate', { expression: "document.querySelector(\"[data-tab='lessons']\").click()" });
     await sleep(800);
-    const challengeCount = (await send('Runtime.evaluate', { expression: "document.querySelectorAll('.challenge-btn').length" })).result.value;
+    const challengeCount = (await send('Runtime.evaluate', { expression: "document.querySelectorAll('.btn-solve').length" })).result.value;
     console.log('  ✓ Live Advanced Curriculum challenges:', challengeCount);
 
     console.log('  ✓ Uncaught errors on live site:', pageErrors.length);

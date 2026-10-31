@@ -20,6 +20,7 @@ import { WaveformViewer } from './ui/waveform_viewer.js';
 
 import { PRESETS } from './modules/presets.js';
 import { LessonManager } from './modules/lessons.js';
+import { soundManager } from './ui/sound_effects.js';
 
 export class RTLPlaygroundApp {
     constructor() {
@@ -40,6 +41,8 @@ export class RTLPlaygroundApp {
         this._setupEvents();
         this._loadDefaultCircuit();
         this.tour = new QuickTourController();
+        this.handbook = new HandbookController();
+        this._setupAudioControls();
 
         // Check if user is visiting for the first time
         try {
@@ -100,6 +103,24 @@ export class RTLPlaygroundApp {
                 this.resetCircuit();
             });
         }
+    }
+
+
+    _setupAudioControls() {
+        const audioBtn = document.getElementById('btn-audio-toggle');
+        const audioIcon = document.getElementById('audio-toggle-icon');
+        if (!audioBtn) return;
+
+        const updateIcon = () => {
+            if (audioIcon) audioIcon.textContent = soundManager.isMuted ? '🔇' : '🔊';
+            audioBtn.title = soundManager.isMuted ? 'Sound Effects: Muted (Click to Unmute)' : 'Sound Effects: Active (Click to Mute)';
+        };
+        updateIcon();
+
+        audioBtn.addEventListener('click', () => {
+            soundManager.toggleMute();
+            updateIcon();
+        });
     }
 
     loadPreset(presetKey) {
@@ -307,3 +328,260 @@ export class QuickTourController {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new RTLPlaygroundApp();
 });
+
+
+export class HandbookController {
+    constructor() {
+        this.modal = document.getElementById('handbook-modal');
+        this.closeBtn = document.getElementById('btn-handbook-close');
+        this.openBtn = document.getElementById('btn-handbook');
+        this.contentEl = document.getElementById('handbook-content');
+        this.tabBtns = document.querySelectorAll('.handbook-tab-btn');
+        this.currentTab = 'gates';
+
+        this.tabData = {
+            gates: {
+                title: 'The 7 Fundamental Logic Gates',
+                html: `
+                    <p style="margin-bottom:12px; color:var(--text-muted); font-size:12px;">
+                        All modern microprocessors, from smartphones to supercomputers, are built entirely from combinations of these 7 fundamental gates.
+                    </p>
+                    <div class="handbook-grid">
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>AND Gate</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = A · B</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Analogy:</strong> Two switches in series. Electricity only flows if switch A AND switch B are closed.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→0] [0,1→0] [1,0→0] [1,1→1]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>OR Gate</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = A + B</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Analogy:</strong> Two switches in parallel. Current flows if switch A OR switch B is closed.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→0] [0,1→1] [1,0→1] [1,1→1]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>NOT Gate (Inverter)</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = ~A</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Analogy:</strong> Normally-closed relay. Inverts high voltage to 0V ground, and ground to 3.3V power.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0→1] [1→0]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>NAND Gate</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = ~(A · B)</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Universal Gate:</strong> Inverted AND. Any digital chip can be constructed purely out of NAND gates alone!</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→1] [0,1→1] [1,0→1] [1,1→0]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>NOR Gate</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = ~(A + B)</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Universal Gate:</strong> Inverted OR. Outputs 1 only when all inputs are 0.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→1] [0,1→0] [1,0→0] [1,1→0]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>XOR Gate (Exclusive OR)</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = A ^ B</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Analogy:</strong> 2-way staircase light switch. Toggling either switch flips the light! Output 1 when inputs differ.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→0] [0,1→1] [1,0→1] [1,1→0]</div>
+                        </div>
+
+                        <div class="handbook-card">
+                            <div class="handbook-card-title">
+                                <span>XNOR Gate (Equivalence)</span>
+                                <span style="font-family:var(--font-mono); font-size:11px; color:#38bdf8;">Y = ~(A ^ B)</span>
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted);"><strong>Equality Detector:</strong> Outputs 1 when inputs match (both 0 or both 1). Core building block of digital comparators.</div>
+                            <div style="font-size:11px; margin-top:4px;"><strong>Truth Table:</strong> [0,0→1] [0,1→0] [1,0→0] [1,1→1]</div>
+                        </div>
+                    </div>
+                `
+            },
+            levels: {
+                title: 'The Physical Reality: Logic 0 vs Logic 1',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <p style="color:var(--text-muted); font-size:12px;">
+                            In pure math, 0 and 1 are abstract numbers. But inside real physical silicon chips, they are physical voltages governed by electromagnetism and CMOS transistors.
+                        </p>
+                        <div class="handbook-grid">
+                            <div class="handbook-card" style="border-left: 3px solid #4ade80;">
+                                <div class="handbook-card-title" style="color:#4ade80;">Logic 1 (HIGH / Power)</div>
+                                <div style="font-size:11px; color:var(--text-muted);"><strong>Physical Voltage:</strong> +3.3V or +1.2V (VDD supply rail).</div>
+                                <div style="font-size:11px; margin-top:4px;"><strong>Silicon Behavior:</strong> PMOS transistors pull the net up toward the power rail. In this playground, active wires glow green with animated signal flow!</div>
+                            </div>
+                            <div class="handbook-card" style="border-left: 3px solid #94a3b8;">
+                                <div class="handbook-card-title" style="color:#94a3b8;">Logic 0 (LOW / Ground)</div>
+                                <div style="font-size:11px; color:var(--text-muted);"><strong>Physical Voltage:</strong> 0.0V (GND ground return).</div>
+                                <div style="font-size:11px; margin-top:4px;"><strong>Silicon Behavior:</strong> NMOS transistors conduct to drain all electric charge to ground. In this playground, low wires are solid slate gray.</div>
+                            </div>
+                            <div class="handbook-card" style="border-left: 3px solid #ef4444;">
+                                <div class="handbook-card-title" style="color:#ef4444;">Null / Floating Net (High-Z)</div>
+                                <div style="font-size:11px; color:var(--text-muted);"><strong>Physical State:</strong> Unconnected pin or undriven wire.</div>
+                                <div style="font-size:11px; margin-top:4px;"><strong>Danger in ASICs:</strong> Floating inputs pick up ambient electromagnetic noise and cause excessive leakage current. Always connect all gate inputs!</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            sequential: {
+                title: 'Sequential Logic, Clocks & Flip-Flops',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <p style="color:var(--text-muted); font-size:12px;">
+                            Combinational logic gates cannot remember the past. Sequential logic introduces memory and time synchronization using a master clock.
+                        </p>
+                        <div class="handbook-grid">
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">Why Chips Need a Clock ⏱️</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Without a clock, signals would race through gates at different speeds depending on wire lengths and temperatures, causing chaotic glitches. The clock acts like an orchestra conductor, telling all memory units when to sample data simultaneously.
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">The D Flip-Flop (Airlock Analogy) 🚪</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Imagine a two-door security airlock. When the clock is LOW, the outer door accepts new cargo (D). At the precise instant the clock rises (0→1), the outer door slams shut and the inner door opens, transferring cargo to the output (Q). Between clock ticks, Q is completely frozen and immune to changes on D!
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">Setup & Hold Times 🛡️</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    <strong>Setup Time (Tsu):</strong> Data on D must remain steady BEFORE the clock edge.<br>
+                                    <strong>Hold Time (Th):</strong> Data on D must remain steady AFTER the clock edge.<br>
+                                    Violating either time causes metastability (unpredictable oscillations)!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            'mux-math': {
+                title: 'Data Routing (MUX) & Binary Arithmetic (Adders)',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <p style="color:var(--text-muted); font-size:12px;">
+                            How computers make decisions and perform calculations.
+                        </p>
+                        <div class="handbook-grid">
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">2:1 Multiplexer (Data Switch) 🔀</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Like a railroad switch: accepts two input data tracks (In0, In1) and uses a select line (Sel) to decide which one connects to the main track. Used in every CPU instruction decoder.
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">1-Bit Half Adder ➕</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Adds two single bits: <strong>SUM = A ^ B</strong> (XOR), <strong>CARRY = A & B</strong> (AND). Cannot accept an incoming carry from a previous digit.
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">1-Bit Full Adder 🔢</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Adds two bits (A, B) PLUS an incoming carry (Cin). Cascading 32 or 64 full adders in a row creates a 32-bit or 64-bit CPU arithmetic addition engine!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            verilog: {
+                title: 'Hardware Description in Verilog RTL',
+                html: `
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <p style="color:var(--text-muted); font-size:12px;">
+                            Verilog is not software code (like C++ or Python). It describes physical silicon hardware circuits!
+                        </p>
+                        <div class="handbook-grid">
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">Continuous Assign (Gates)</div>
+                                <div style="font-size:11px; font-family:var(--font-mono); color:#38bdf8; background:rgba(0,0,0,0.3); padding:4px 6px; border-radius:4px;">
+                                    assign y = a & b;
+                                </div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                                    Describes physical wires and combinational gates. Updates continuously with zero clock dependency.
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">Sequential Always (Registers)</div>
+                                <div style="font-size:11px; font-family:var(--font-mono); color:#38bdf8; background:rgba(0,0,0,0.3); padding:4px 6px; border-radius:4px;">
+                                    always @(posedge clk) begin<br>&nbsp;&nbsp;q <= d;<br>end
+                                </div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                                    Infers D flip-flop registers triggered strictly on rising clock edges.
+                                </div>
+                            </div>
+                            <div class="handbook-card">
+                                <div class="handbook-card-title">Nonblocking (&lt;=) Rule</div>
+                                <div style="font-size:11px; color:var(--text-muted);">
+                                    Always use nonblocking (<code>&lt;=</code>) for sequential logic to model concurrent clock advancement and eliminate race conditions between pipeline stages!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        this.init();
+    }
+
+    init() {
+        if (!this.modal) return;
+
+        this.openBtn?.addEventListener('click', () => this.open());
+        this.closeBtn?.addEventListener('click', () => this.close());
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) this.close();
+        });
+
+        this.tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-tab');
+                this.setTab(tab);
+            });
+        });
+    }
+
+    open() {
+        this.render();
+        if (this.modal) this.modal.style.display = 'flex';
+    }
+
+    close() {
+        if (this.modal) this.modal.style.display = 'none';
+    }
+
+    setTab(tab) {
+        if (!this.tabData[tab]) return;
+        this.currentTab = tab;
+        this.tabBtns.forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+        });
+        this.render();
+    }
+
+    render() {
+        if (!this.contentEl) return;
+        const data = this.tabData[this.currentTab];
+        if (data) {
+            this.contentEl.innerHTML = data.html;
+        }
+    }
+}

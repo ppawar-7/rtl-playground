@@ -9,6 +9,7 @@
  */
 
 import { PRESETS } from './presets.js';
+import { soundManager } from '../ui/sound_effects.js';
 
 const getComps = (graph) => (graph.getAllComponents ? graph.getAllComponents() : Array.from(graph.components.values()));
 
@@ -27,6 +28,21 @@ export const LESSONS = [
         whatIsHappening: 'In physical CMOS silicon, an AND gate is built from a NAND gate followed by an Inverter. When both inputs A and B are HIGH (VDD voltage), two series NMOS transistors conduct, pulling the internal node to ground, which the inverter flips to a strong HIGH output (1). If either input is LOW (0V), the output is driven LOW (0).',
         task: 'Add an AND gate between inputs A and B, add an Output Y, wire them together, and test all 4 combinations by clicking the input switches.',
         solutionPreset: 'and-gate',
+        quiz: {
+        "question": "If Switch A = 1 and Switch B = 0, what does an AND gate output?",
+        "options": [
+                {
+                        "text": "0 (LOW / 0V Ground)",
+                        "correct": true,
+                        "explain": "Correct! An AND gate requires ALL inputs to be 1 to produce an active 1."
+                },
+                {
+                        "text": "1 (HIGH / 3.3V Power)",
+                        "correct": false,
+                        "explain": "Incorrect. Because Switch B is 0, the series pull-down NMOS path is broken, forcing output to 0."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 80, value: 0 },
@@ -145,6 +161,21 @@ export const LESSONS = [
         whatIsHappening: 'In binary math, 1 + 1 equals 2 (written as 10 in binary). The right bit is SUM (0) and the left bit is CARRY (1). The XOR gate detects when exactly one input is 1, while the AND gate detects when an overflow to the next bit column is required.',
         task: 'Add an XOR gate for SUM and an AND gate for CARRY. Connect inputs A and B to both gates, and connect each gate to its respective output.',
         solutionPreset: 'half-adder',
+        quiz: {
+        "question": "When adding binary 1 + 1, what are the SUM and CARRY outputs?",
+        "options": [
+                {
+                        "text": "SUM = 0, CARRY = 1 (Binary 10 = Decimal 2)",
+                        "correct": true,
+                        "explain": "Correct! 1 + 1 = 2 (in binary '10'). The 1-bit SUM is 0 and CARRY is 1."
+                },
+                {
+                        "text": "SUM = 1, CARRY = 1 (Binary 11 = Decimal 3)",
+                        "correct": false,
+                        "explain": "Incorrect. 1 + 1 = 2 ('10'), not 3 ('11')."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 70, value: 0 },
@@ -277,6 +308,21 @@ export const LESSONS = [
         whatIsHappening: 'In hardware, a 2:1 MUX acts as an electronic selector switch. When Sel=0, data passes from pin A to output Y. When Sel=1, data passes from pin B to output Y. In ASIC synthesis, this continuous dataflow models transmission gates or standard multiplexer cells.',
         task: 'Place a 2:1 MUX component. Connect input A to port 0, input B to port 1, input Sel to the selection pin (bottom), and route the output to Y.',
         solutionPreset: 'mux-2to1',
+        quiz: {
+        "question": "In a 2:1 Multiplexer with inputs In0 and In1, which input is forwarded to Out when Sel = 1?",
+        "options": [
+                {
+                        "text": "In1",
+                        "correct": true,
+                        "explain": "Correct! Sel = 0 steers In0; Sel = 1 steers In1."
+                },
+                {
+                        "text": "In0",
+                        "correct": false,
+                        "explain": "Incorrect. In0 is selected when Sel = 0."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 60, value: 0 },
@@ -395,6 +441,21 @@ export const LESSONS = [
         whatIsHappening: 'A D Flip-Flop consists of Master and Slave latches. When the clock rises from 0 to 1, the Master locks in the current value of input D, and the Slave propagates it to output Q. State updates happen in lockstep with the clock frequency, forming the basis of all synchronous digital microprocessors.',
         task: 'Open the "Waveform Viewer" tab below, click "Clock Step" twice to observe rising and falling clock edges, and verify that Q only updates on posedge clk.',
         solutionPreset: 'dff-demo',
+        quiz: {
+        "question": "When does a D Flip-Flop copy the value on input D to output Q?",
+        "options": [
+                {
+                        "text": "Only on the instant of the rising clock edge (0 -> 1)",
+                        "correct": true,
+                        "explain": "Correct! Edge-triggered flip-flops sample data precisely on the positive clock edge."
+                },
+                {
+                        "text": "Continuously whenever the clock is high (1)",
+                        "correct": false,
+                        "explain": "Incorrect. That would be a level-sensitive latch, not an edge-triggered flip-flop!"
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 80, y: 90, value: 1 },
@@ -503,6 +564,21 @@ export const LESSONS = [
         whatIsHappening: 'In Verilog, conditional selection is expressed as assign y = sel ? b : a; (ternary operator) or procedural if (sel) y = b; else y = a;. In physical silicon, logic synthesis compilers map both descriptions into a standard multiplexer library cell.',
         task: 'Connect inputs A and B to the data pins of the 2:1 MUX, connect Sel to the select pin (bottom), and route the output to Y. Verify across all 8 truth table combinations.',
         solutionPreset: 'mux-cond',
+        quiz: {
+        "question": "In Verilog, what hardware does the continuous assignment `assign y = sel ? b : a;` infer?",
+        "options": [
+                {
+                        "text": "A 2:1 multiplexer",
+                        "correct": true,
+                        "explain": "Correct! The ternary conditional operator (? :) synthesizes directly into a multiplexer."
+                },
+                {
+                        "text": "A D flip-flop register",
+                        "correct": false,
+                        "explain": "Incorrect. Flip-flops require an edge-triggered always @(posedge clk) block."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 80, y: 70, value: 0 },
@@ -622,6 +698,21 @@ export const LESSONS = [
         whatIsHappening: 'In physical ASIC cell libraries, clock gating using external logic gates creates clock skew and clock tree violations. Instead, hardware designers implement clock enable using an input multiplexer that loops output Q back to data input D when EN=0. The flip-flop still receives a clean, un-gated clock pulse, but safely re-loads its own current value!',
         task: 'Wire the circuit: connect D to MUX in1, loop DFF Q back to MUX in0, connect EN to MUX select, and route MUX output to DFF data in. Step the clock in Waveform tab to verify that D is ignored when EN=0.',
         solutionPreset: 'reg-enable',
+        quiz: {
+        "question": "When Enable (EN) = 0 on a register with clock enable, what happens on the next clock tick?",
+        "options": [
+                {
+                        "text": "It recirculates its current Q value (holds state)",
+                        "correct": true,
+                        "explain": "Correct! When EN=0, the recirculation MUX routes Q back into D, holding the stored value."
+                },
+                {
+                        "text": "It clears to 0",
+                        "correct": false,
+                        "explain": "Incorrect. Reset is controlled by RST, not EN. EN=0 simply holds state."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -774,6 +865,21 @@ export const LESSONS = [
         whatIsHappening: 'In physical chips, synchronous reset ensures registers only clear their state on the rising clock edge (0→1). This eliminates unpredictable transient glitches and metastability. In logic gates, this is built using an inverter and an AND gate: D_effective = D & (~RST). When RST is 1, the inverted signal is 0, forcing the AND gate to 0 so the flip-flop captures 0 on the next clock pulse.',
         task: 'Route RST into the NOT gate. Connect the NOT gate output and Input D to the AND gate. Connect the AND gate output to the DFF data input. Step the clock with RST=1 in the Waveform Viewer to verify that Q synchronously resets to 0.',
         solutionPreset: 'reg-sync-reset',
+        quiz: {
+        "question": "Why is synchronous reset preferred over asynchronous reset in high-speed digital ASICs?",
+        "options": [
+                {
+                        "text": "Eliminates spurious glitch resets and prevents reset removal timing violations",
+                        "correct": true,
+                        "explain": "Correct! Synchronous reset is filtered by the clock, preventing glitches from resetting the chip."
+                },
+                {
+                        "text": "It requires zero silicon area",
+                        "correct": false,
+                        "explain": "Incorrect. Synchronous reset requires a logic gate or MUX before D."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -913,6 +1019,21 @@ export const LESSONS = [
         whatIsHappening: 'Every flip-flop is a 1-clock-cycle delay element. In this 2-stage pipeline, data at D enters Stage 1 on the first clock edge. On the next clock edge, Stage 1 passes its data into Stage 2. Pipelining allows digital processors to divide complex math into single-cycle steps, running at gigahertz clock speeds without timing violations.',
         task: 'Connect Input D to DFF1 data input, connect DFF1 Q to DFF2 data input, and connect outputs Q1 and Q2. Step the clock in Waveform Viewer to observe data shifting cycle-by-cycle.',
         solutionPreset: 'shift-reg-2stage',
+        quiz: {
+        "question": "In a 2-stage shift register (DFF1 -> DFF2), if DFF1 contains 1 and DFF2 contains 0, what happens on a clock edge?",
+        "options": [
+                {
+                        "text": "DFF2 captures 1 (the OLD value of DFF1) at the exact same time DFF1 captures new D",
+                        "correct": true,
+                        "explain": "Correct! Because flip-flops sample on the edge, DFF2 latches DFF1's pre-edge state before DFF1's new output propagates."
+                },
+                {
+                        "text": "Data races through both DFFs simultaneously in a single cycle",
+                        "correct": false,
+                        "explain": "Incorrect! Setup/hold times prevent races; data advances by exactly 1 stage per cycle."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'input_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
@@ -1062,6 +1183,21 @@ export const LESSONS = [
         whatIsHappening: 'A 1-bit full adder computes binary arithmetic with an incoming carry bit: SUM = A ⊕ B ⊕ Cin (odd parity) and COUT = (A·B) + (Cin·(A⊕B)) (majority logic). If you add 1 + 1 + 1 in binary, the result is 3 (11₂ in binary: SUM=1 and COUT=1). In physical ALUs, full adders are chained together so the carry-out ripples into the carry-in of the next higher bit.',
         task: 'Place two XOR gates, two AND gates, and one OR gate from the palette. Wire SUM = A ⊕ B ⊕ CIN, and wire COUT = (A·B) + (CIN·(A⊕B)). Test with A=1, B=1, CIN=1 to verify SUM=1, COUT=1.',
         solutionPreset: 'full-adder',
+        quiz: {
+        "question": "For a Full Adder with A = 1, B = 1, and Cin = 1, what are SUM and Cout?",
+        "options": [
+                {
+                        "text": "SUM = 1, Cout = 1 (1 + 1 + 1 = 3 = '11' in binary)",
+                        "correct": true,
+                        "explain": "Correct! Three 1s add to 3 in decimal, which is binary 11 (Cout=1, SUM=1)."
+                },
+                {
+                        "text": "SUM = 0, Cout = 1 (Binary 10 = Decimal 2)",
+                        "correct": false,
+                        "explain": "Incorrect. 1 + 1 + 1 = 3, not 2."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_a', type: 'INPUT', label: 'A', x: 60, y: 70, value: 0 },
@@ -1195,6 +1331,21 @@ export const LESSONS = [
         whatIsHappening: 'The DFFE is an ASIC standard library cell containing a D Flip-Flop with integrated Clock Enable. When EN=1, the cell samples input D on the rising clock edge (0→1). When EN=0, clock pulses are safely ignored and previous state Q is preserved. In Verilog RTL, this maps directly to always @(posedge clk) begin if (en) q <= d; end.',
         task: 'Connect Input D to the data pin (in0) of the DFFE, and connect Input EN to the enable pin (in2). Pulse the clock in the Waveform Viewer to confirm that D is captured when EN=1 and retained when EN=0.',
         solutionPreset: 'dff-enable',
+        quiz: {
+        "question": "In Verilog, how is a DFFE described inside an `always @(posedge clk)` block?",
+        "options": [
+                {
+                        "text": "if (en) q <= d;",
+                        "correct": true,
+                        "explain": "Correct! If en is 1, nonblocking assignment q <= d occurs; otherwise q retains its value."
+                },
+                {
+                        "text": "q = en & d;",
+                        "correct": false,
+                        "explain": "Incorrect. That describes combinational gating, not a sequential register."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 70, value: 1 },
@@ -1328,6 +1479,21 @@ end</code></pre>
         whatIsHappening: 'When both Reset (RST) and Clock Enable (EN) arrive simultaneously at a register, Reset MUST take priority! If Enable took precedence, a frozen or disabled subsystem could never be reset during a system fault. In RTL, if (rst) q <= 0; else if (en) q <= d; codifies this strict priority structure.',
         task: 'Wire Input D, EN, and RST into the DFFESR component. Step the clock in Waveform Viewer with both RST=1 and EN=1 to confirm that Reset dominates and clears Q to 0.',
         solutionPreset: 'dff-esr-priority',
+        quiz: {
+        "question": "If both Reset (RST) and Enable (EN) are asserted simultaneously (RST=1, EN=1), what must happen?",
+        "options": [
+                {
+                        "text": "Reset strictly wins: Q becomes 0",
+                        "correct": true,
+                        "explain": "Correct! Reset priority guarantees deterministic initialization even if an enable signal is active."
+                },
+                {
+                        "text": "Enable wins: Q loads D",
+                        "correct": false,
+                        "explain": "Incorrect. Reset must always take priority over enable."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 60, value: 1 },
@@ -1461,6 +1627,21 @@ end</code></pre>
         whatIsHappening: 'Physical registers sample their inputs concurrently at the active clock edge. Verilog nonblocking assignments (<=) mirror this: every register evaluates its input based on state BEFORE the clock edge, and only commits updates AFTER the edge completes. If blocking assignments (=) were used, Stage 1 would immediately update and Stage 2 would mistakenly capture the new value in the very same clock edge — a dangerous software simulation race condition!',
         task: 'Wire Input D to STAGE1, connect STAGE1 Q to STAGE2 D, and wire both outputs Q1 and Q2. Step the clock over multiple cycles to confirm that a data pulse takes exactly 2 cycles to traverse the pipeline without shoot-through.',
         solutionPreset: 'blocking-vs-nonblocking',
+        quiz: {
+        "question": "Which assignment operator MUST be used for sequential logic in synthesizable Verilog?",
+        "options": [
+                {
+                        "text": "Nonblocking (`<=`)",
+                        "correct": true,
+                        "explain": "Correct! `<=` schedules updates at the end of the simulation time step, preventing race conditions between pipeline stages."
+                },
+                {
+                        "text": "Blocking (`=`)",
+                        "correct": false,
+                        "explain": "Incorrect! Blocking assignments in sequential always blocks create order-dependent simulation race conditions."
+                }
+        ]
+},
         starterCircuit: {
             components: [
                 { id: 'inp_d', type: 'INPUT', label: 'D', x: 60, y: 80, value: 1 },
@@ -1626,6 +1807,89 @@ export class LessonManager {
 
     getLessonById(id) {
         return LESSONS.find(l => l.id === id);
+    }
+
+
+    _updateCanvasTutor(completedCount, steps) {
+        if (typeof document === 'undefined') return;
+        const tutor = document.getElementById('canvas-tutor-banner');
+        if (!tutor) return;
+
+        if (!this.currentLesson || !steps || steps.length === 0) {
+            tutor.style.display = 'none';
+            try { window.app?.componentLibrary?.clearHighlights(); } catch {}
+            return;
+        }
+
+        tutor.style.display = 'flex';
+        const labelEl = document.getElementById('tutor-step-label');
+        const textEl = document.getElementById('tutor-step-text');
+        const solBtn = document.getElementById('btn-tutor-solution');
+        const dismissBtn = document.getElementById('btn-tutor-dismiss');
+
+        if (dismissBtn && !dismissBtn._bound) {
+            dismissBtn._bound = true;
+            dismissBtn.addEventListener('click', () => {
+                tutor.style.display = 'none';
+            });
+        }
+
+        if (solBtn && !solBtn._bound) {
+            solBtn._bound = true;
+            solBtn.addEventListener('click', () => {
+                const loadBtn = document.getElementById('btn-load-solution');
+                if (loadBtn) loadBtn.click();
+            });
+        }
+
+        if (completedCount === steps.length) {
+            // All steps passed!
+            tutor.classList.add('tutor-success');
+            if (labelEl) labelEl.textContent = '🎉 All Steps Complete!';
+            if (textEl) textEl.textContent = 'Great job! Click Verify & Check Solution to finish and advance.';
+            try { window.app?.componentLibrary?.clearHighlights(); } catch {}
+            return;
+        }
+
+        tutor.classList.remove('tutor-success');
+
+        // Find active step
+        const activeIdx = steps.findIndex(s => {
+            try { return !s.check(this.graph, this.simulator, this.seq); } catch { return true; }
+        });
+
+        if (activeIdx !== -1) {
+            const activeStep = steps[activeIdx];
+            if (labelEl) labelEl.textContent = `Step ${activeIdx + 1} of ${steps.length}`;
+            if (textEl) textEl.textContent = activeStep.text;
+
+            // Highlight component in palette if step requires placement
+            const txt = activeStep.text;
+            let compType = null;
+            if (/AND gate/i.test(txt)) compType = 'AND';
+            else if (/OR gate/i.test(txt)) compType = 'OR';
+            else if (/NOT gate|Inverter/i.test(txt)) compType = 'NOT';
+            else if (/NAND gate/i.test(txt)) compType = 'NAND';
+            else if (/NOR gate/i.test(txt)) compType = 'NOR';
+            else if (/XOR gate/i.test(txt)) compType = 'XOR';
+            else if (/XNOR gate/i.test(txt)) compType = 'XNOR';
+            else if (/Input|Switch/i.test(txt)) compType = 'INPUT';
+            else if (/Output/i.test(txt)) compType = 'OUTPUT';
+            else if (/Clock/i.test(txt)) compType = 'CLOCK';
+            else if (/DFFESR/i.test(txt)) compType = 'DFFESR';
+            else if (/DFFSR/i.test(txt)) compType = 'DFFSR';
+            else if (/DFFE/i.test(txt)) compType = 'DFFE';
+            else if (/D Flip-Flop|DFF/i.test(txt)) compType = 'DFF';
+            else if (/Multiplexer|MUX/i.test(txt)) compType = 'MUX2';
+
+            try {
+                if (compType) {
+                    window.app?.componentLibrary?.highlightComponentType(compType);
+                } else {
+                    window.app?.componentLibrary?.clearHighlights();
+                }
+            } catch {}
+        }
     }
 
     renderList() {
@@ -1846,6 +2110,66 @@ export class LessonManager {
                 this.checkCurrentSolution();
             });
         }
+
+        // Render interactive concept check quiz
+        this._renderQuiz(lesson);
+    }
+
+    _renderQuiz(lesson) {
+        if (!lesson || !lesson.quiz) return;
+        const container = document.getElementById('lesson-feedback');
+        if (!container) return;
+
+        let quizContainer = document.getElementById('lesson-quiz-container');
+        if (!quizContainer) {
+            quizContainer = document.createElement('div');
+            quizContainer.id = 'lesson-quiz-container';
+            container.parentNode.insertBefore(quizContainer, container.nextSibling);
+        }
+
+        quizContainer.innerHTML = `
+            <div class="lesson-quiz-box">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                    <span style="font-size:14px;">🧠</span>
+                    <span style="font-size:11px; font-weight:700; color:var(--accent-primary);">Concept Check</span>
+                </div>
+                <div class="quiz-question">${lesson.quiz.question}</div>
+                <div class="quiz-options">
+                    ${lesson.quiz.options.map((opt, oIdx) => `
+                        <button class="quiz-opt-btn" data-opt-idx="${oIdx}">
+                            ${opt.text}
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="quiz-feedback-box" class="quiz-feedback" style="display:none;"></div>
+            </div>
+        `;
+
+        quizContainer.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const oIdx = parseInt(btn.getAttribute('data-opt-idx'), 10);
+                const opt = lesson.quiz.options[oIdx];
+                const feedback = document.getElementById('quiz-feedback-box');
+                if (!opt || !feedback) return;
+
+                quizContainer.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                    b.classList.remove('correct', 'incorrect');
+                });
+
+                if (opt.correct) {
+                    btn.classList.add('correct');
+                    feedback.className = 'quiz-feedback correct';
+                    feedback.innerHTML = `✓ ${opt.explain}`;
+                    feedback.style.display = 'block';
+                    try { soundManager.playStepSuccess(); } catch {}
+                } else {
+                    btn.classList.add('incorrect');
+                    feedback.className = 'quiz-feedback incorrect';
+                    feedback.innerHTML = `✗ ${opt.explain}`;
+                    feedback.style.display = 'block';
+                }
+            });
+        });
     }
 
     updateStepChecklist() {
@@ -1908,6 +2232,15 @@ export class LessonManager {
         listContainer.innerHTML = html;
         if (countSpan) countSpan.textContent = completedCount;
 
+        // Auditory celebration when step is newly completed
+        if (completedCount > (this._lastCompletedStepCount || 0)) {
+            try { soundManager.playStepSuccess(); } catch {}
+        }
+        this._lastCompletedStepCount = completedCount;
+
+        // Update on-canvas guided tutor banner & palette guide highlights
+        this._updateCanvasTutor(completedCount, this.currentLesson.steps);
+
         // Bind hint toggle buttons
         listContainer.querySelectorAll('.btn-step-hint').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1935,6 +2268,7 @@ export class LessonManager {
 
         if (result.pass) {
             this.markLessonCompleted(this.currentLesson.id);
+            try { soundManager.playLessonComplete(); } catch {}
             this.updateStepChecklist();
 
             // Find next lesson

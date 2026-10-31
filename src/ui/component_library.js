@@ -3,6 +3,7 @@
  * 
  * Displays categorized component items (I/O, Basic Gates, Combinational, Sequential).
  * Clicking an item selects it for placement on the canvas.
+ * Supports guided tutorial step highlighting to direct beginner focus.
  * 
  * @module ComponentLibrary
  */
@@ -206,7 +207,24 @@ export class ComponentLibrary {
 
     clearActive() {
         this.activeType = null;
+        if (!this.container) return;
         const buttons = this.container.querySelectorAll('.palette-item');
         buttons.forEach(b => b.classList.remove('active'));
+    }
+
+    highlightComponentType(type) {
+        this.clearHighlights();
+        if (!type || !this.container) return;
+        const btn = this.container.querySelector(`.palette-item[data-type="${type}"]`);
+        if (btn) {
+            btn.classList.add('palette-guide-highlight');
+            try { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch {}
+        }
+    }
+
+    clearHighlights() {
+        if (!this.container) return;
+        const highlighted = this.container.querySelectorAll('.palette-guide-highlight');
+        highlighted.forEach(b => b.classList.remove('palette-guide-highlight'));
     }
 }

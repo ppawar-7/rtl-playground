@@ -21,6 +21,7 @@ const ROOT = resolve(__dirname, '..');
 const suites = [
     { name: 'RTL Fundamentals & Phase 6 Unit Tests', file: 'tests/tests.js' },
     { name: 'Beginner Experience & Micro-Steps Verification', file: 'tests/test_beginner_experience.js', isTestRunner: true },
+    { name: 'Browser UI & Guided Experience Verification', file: 'tests/test_ui_enhancements.js' },
     { name: 'Advanced RTL Lab Regression & Property Tests', file: 'tests/advanced/run_all_tests.js' },
     { name: 'Full Yosys HDL Synthesis & AST Checks (17 modules)', file: 'tests/verilog_verification/run_yosys_verification.js' },
     { name: 'Icarus Verilog Functional Event-Driven Simulation (17 suites)', file: 'tests/verilog_verification/run_iverilog_simulation.js' },

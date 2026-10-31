@@ -13,6 +13,7 @@
  */
 
 import { COMPONENT_TYPES } from '../engine/circuit_graph.js';
+import { soundManager } from './sound_effects.js';
 
 /**
  * XML/HTML entity escaping helper for safe SVG text interpolation.
@@ -408,8 +409,12 @@ export class CircuitEditor {
             circle.setAttribute('data-comp-id', comp.id);
             circle.setAttribute('data-pin-id', pin.id);
             circle.setAttribute('data-kind', 'input');
-            pinG.appendChild(circle);
 
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `${comp.label || comp.type} [In ${idx}]: Click or drag to connect wire`;
+            circle.appendChild(title);
+
+            pinG.appendChild(circle);
             group.appendChild(pinG);
         });
 
@@ -439,8 +444,12 @@ export class CircuitEditor {
             circle.setAttribute('data-comp-id', comp.id);
             circle.setAttribute('data-pin-id', pin.id);
             circle.setAttribute('data-kind', 'output');
-            pinG.appendChild(circle);
 
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `${comp.label || comp.type} [Out ${idx}]: Click or drag to connect wire`;
+            circle.appendChild(title);
+
+            pinG.appendChild(circle);
             group.appendChild(pinG);
         });
     }
@@ -550,10 +559,12 @@ export class CircuitEditor {
         return path;
     }
 
-    _calculateWirePath(start, end) {
+    _calculateWirePath(start, end, startKind = 'output') {
         const dx = Math.abs(end.x - start.x);
         const curveOffset = Math.max(30, dx * 0.45);
-        // Bézier curve with horizontal lead-ins
+        if (startKind === 'input') {
+            return `M ${start.x} ${start.y} C ${start.x - curveOffset} ${start.y}, ${end.x + curveOffset} ${end.y}, ${end.x} ${end.y}`;
+        }
         return `M ${start.x} ${start.y} C ${start.x + curveOffset} ${start.y}, ${end.x - curveOffset} ${end.y}, ${end.x} ${end.y}`;
     }
 
@@ -573,25 +584,31 @@ export class CircuitEditor {
             return;
         }
 
-        // 2. Check pin click
+        // 2. Check pin click (Bidirectional: supports dragging from Output OR Input!)
         const pinElem = e.target.closest('.circuit-pin');
         if (pinElem) {
             const compId = pinElem.getAttribute('data-comp-id');
             const pinId = pinElem.getAttribute('data-pin-id');
             const kind = pinElem.getAttribute('data-kind');
 
-            if (kind === 'output') {
-                // Start creating a wire
+            if (!this.isCreatingWire) {
+                // Start creating wire from either output or input pin
                 const pinCoords = this.getPinAbsoluteCoords(compId, pinId);
                 this.isCreatingWire = true;
                 this.wireDragStarted = false;
                 this.wireStartCoords = coords;
-                this.wireStartPin = { componentId: compId, pinId, x: pinCoords.x, y: pinCoords.y };
+                this.wireStartPin = { componentId: compId, pinId, kind, x: pinCoords.x, y: pinCoords.y };
                 this._createPendingWire(pinCoords.x, pinCoords.y);
+                this._highlightConnectablePins(kind);
                 return;
-            } else if (kind === 'input' && this.isCreatingWire) {
-                // Complete wire creation
-                this._completeWire(compId, pinId);
+            } else {
+                // Already creating wire: click on opposite pin completes it
+                if (kind !== this.wireStartPin.kind) {
+                    this._completeWire(compId, pinId, kind);
+                } else {
+                    this._showFlashMessage(`Cannot connect ${kind} to another ${kind} pin`, 'error');
+                    this._cancelPendingWire();
+                }
                 return;
             }
         }
@@ -609,6 +626,7 @@ export class CircuitEditor {
                     this.graph.setInputValue(compId, nextVal);
                     this.simulator.evaluate();
                     this.updateSignals();
+                    try { soundManager.playSwitchClick(); } catch {}
                     return;
                 }
             }
@@ -677,8 +695,52 @@ export class CircuitEditor {
                     this.wireDragStarted = true;
                 }
             }
-            const d = this._calculateWirePath(start, end);
+            const d = this._calculateWirePath(start, end, this.wireStartPin.kind);
             this.pendingWirePath.setAttribute('d', d);
+        }
+
+        // Contextual plain-English hover guidance
+        const statusBar = document.getElementById('canvas-status-text');
+        if (statusBar) {
+            if (this.isCreatingWire) {
+                statusBar.textContent = `⚡ Connecting wire from ${this.wireStartPin.kind} pin — Release or click on an opposite pin`;
+                statusBar.style.color = '#38bdf8';
+            } else {
+                const pinEl = e.target.closest('.circuit-pin');
+                const ioEl = e.target.closest('.io-input-rect');
+                const wireEl = e.target.closest('.circuit-wire');
+                const gateEl = e.target.closest('.gate-group');
+
+                if (pinEl) {
+                    const cId = pinEl.getAttribute('data-comp-id');
+                    const k = pinEl.getAttribute('data-kind');
+                    const comp = this.graph.getComponent(cId);
+                    const name = comp ? (comp.label || comp.type) : 'Component';
+                    statusBar.textContent = `📍 ${k === 'output' ? 'Output' : 'Input'} Pin of ${name} — Click & drag wire to connect`;
+                    statusBar.style.color = '#38bdf8';
+                } else if (ioEl) {
+                    statusBar.textContent = '🎛️ Input Switch — Click directly to toggle between 0 (0V) and 1 (3.3V)';
+                    statusBar.style.color = '#4ade80';
+                } else if (wireEl) {
+                    const wId = wireEl.getAttribute('data-id');
+                    const conn = this.graph.connections.get(wId);
+                    if (conn) {
+                        const val = this.graph.getPinValue({ componentId: conn.fromComponent, pinId: conn.fromPin });
+                        statusBar.textContent = `⚡ Wire: ${conn.fromComponent} → ${conn.toComponent} | Voltage: ${val === 1 ? '3.3V HIGH (1)' : '0V LOW (0)'}`;
+                        statusBar.style.color = val === 1 ? '#4ade80' : '#94a3b8';
+                    }
+                } else if (gateEl) {
+                    const gId = gateEl.getAttribute('data-id');
+                    const comp = this.graph.getComponent(gId);
+                    if (comp) {
+                        statusBar.textContent = `📦 ${comp.label || comp.type} — Click to inspect in right panel, drag to reposition`;
+                        statusBar.style.color = 'var(--text-main)';
+                    }
+                } else {
+                    statusBar.textContent = 'Ready — Drag gates onto canvas & connect pins';
+                    statusBar.style.color = 'var(--text-muted)';
+                }
+            }
         }
     }
 
@@ -690,15 +752,18 @@ export class CircuitEditor {
 
         if (this.isCreatingWire) {
             const pinElem = e.target.closest('.circuit-pin');
-            if (pinElem && pinElem.getAttribute('data-kind') === 'input') {
+            if (pinElem) {
                 const compId = pinElem.getAttribute('data-comp-id');
                 const pinId = pinElem.getAttribute('data-pin-id');
-                this._completeWire(compId, pinId);
+                const kind = pinElem.getAttribute('data-kind');
+                if (kind !== this.wireStartPin.kind) {
+                    this._completeWire(compId, pinId, kind);
+                    return;
+                }
             } else if (this.wireDragStarted) {
                 // If the user dragged and released in empty space, cancel
                 this._cancelPendingWire();
             }
-            // If user just clicked (not dragged), keep pending wire active so next click on input pin completes it
         }
     }
 
@@ -729,32 +794,56 @@ export class CircuitEditor {
         this.pendingWireLayer.appendChild(this.pendingWirePath);
     }
 
+    _highlightConnectablePins(startKind) {
+        if (!this.svg) return;
+        const targetClass = startKind === 'output' ? '.input-pin' : '.output-pin';
+        this.svg.querySelectorAll(targetClass).forEach(pin => {
+            pin.classList.add('pin-target-candidate');
+        });
+    }
+
+    _clearConnectableHighlights() {
+        if (!this.svg) return;
+        this.svg.querySelectorAll('.pin-target-candidate').forEach(pin => {
+            pin.classList.remove('pin-target-candidate');
+        });
+    }
+
     _cancelPendingWire() {
         this.isCreatingWire = false;
         this.wireStartPin = null;
         this.pendingWireLayer.innerHTML = '';
         this.pendingWirePath = null;
+        this._clearConnectableHighlights();
     }
 
-    _completeWire(targetCompId, targetPinId) {
+    _completeWire(targetCompId, targetPinId, targetKind = 'input') {
         if (!this.wireStartPin) {
             this._cancelPendingWire();
             return;
         }
 
-        const res = this.graph.addConnection(
-            this.wireStartPin.componentId,
-            this.wireStartPin.pinId,
-            targetCompId,
-            targetPinId
-        );
+        let fromComp = this.wireStartPin.componentId;
+        let fromPin = this.wireStartPin.pinId;
+        let toComp = targetCompId;
+        let toPin = targetPinId;
+
+        // If user started from input pin or ended on output pin, swap to ensure from=output, to=input
+        if (this.wireStartPin.kind === 'input' || targetKind === 'output') {
+            fromComp = targetCompId;
+            fromPin = targetPinId;
+            toComp = this.wireStartPin.componentId;
+            toPin = this.wireStartPin.pinId;
+        }
+
+        const res = this.graph.addConnection(fromComp, fromPin, toComp, toPin);
 
         if (!res.ok) {
-            // Visual alert / error indicator
             console.warn(`Connection failed: ${res.error}`);
             this._showFlashMessage(res.error, 'error');
         } else {
             this.simulator.evaluate();
+            try { soundManager.playWireConnect(); } catch {}
         }
 
         this._cancelPendingWire();
