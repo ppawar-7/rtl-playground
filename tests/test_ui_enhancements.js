@@ -53,8 +53,8 @@ async function testUIEnhancements() {
 
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     let connected = false;
-    for (let i = 0; i < 30; i++) {
-        await sleep(150);
+    for (let i = 0; i < 50; i++) {
+        await sleep(200);
         try {
             const res = await fetch(`http://127.0.0.1:${cdpPort}/json/version`);
             if (res.ok) { connected = true; break; }

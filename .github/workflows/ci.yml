@@ -56,6 +56,9 @@ jobs:
             sudo apt-get update && sudo apt-get install -y chromium-browser
           fi
 
+      - name: Run Browser UI & Guided Experience Verification
+        run: npm run test:ui
+
       - name: Run GitHub Pages Subpath Audit (/rtl-playground/)
         run: SITE_ROOT=_site npm run test:subpath
 
