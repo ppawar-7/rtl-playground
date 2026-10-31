@@ -67,6 +67,11 @@ async function runLiveAudit() {
     const title = (await send('Runtime.evaluate', { expression: 'document.title' })).result.value;
     console.log('  ✓ Live Fundamentals Title:', title);
 
+    const hasHandbook = (await send('Runtime.evaluate', { expression: "!!document.getElementById('btn-handbook')" })).result.value;
+    const hasAudio = (await send('Runtime.evaluate', { expression: "!!document.getElementById('btn-audio-toggle')" })).result.value;
+    const hasTutor = (await send('Runtime.evaluate', { expression: "!!document.getElementById('canvas-tutor-banner')" })).result.value;
+    console.log(`  ✓ Live UI Features: Handbook=${hasHandbook}, AudioToggle=${hasAudio}, TutorBanner=${hasTutor}`);
+
     // Navigate to advanced-lab
     await send('Page.navigate', { url: 'https://ppawar-7.github.io/rtl-playground/advanced-lab/index.html?tab=datapath' });
     await sleep(2000);
